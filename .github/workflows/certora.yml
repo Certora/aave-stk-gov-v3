@@ -59,3 +59,5 @@ jobs:
           - allProps.conf --rule totalSupplyDoesNotDropToZero
           - allProps.conf --rule slashingIncreaseExchangeRate
           - allProps.conf --rule returnFundsDecreaseExchangeRate
+          - token-v3-delegate.conf
+          - token-v3-general.conf

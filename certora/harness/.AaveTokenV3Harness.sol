@@ -1,5 +1,13 @@
-// SPDX-License-Identifier: agpl-3.0
+// SPDX-License-Identifier: MIT
+
+/**
+
+  This is an extension of the AaveTokenV3 with added getters on the _balances fields
+
+ */
+
 pragma solidity ^0.8.0;
+
 
 import {StakedAaveV3} from '../munged/src/contracts/StakedAaveV3.sol';
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
@@ -7,7 +15,7 @@ import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import {DelegationMode} from 'aave-token-v3/DelegationAwareBalance.sol';
 import {BaseDelegation} from 'aave-token-v3/BaseDelegation.sol';
 
-contract StakedAaveV3Harness is StakedAaveV3 {
+contract AaveTokenV3Harness is StakedAaveV3 {
     constructor(IERC20 stakedToken, IERC20 rewardToken, uint256 unstakeWindow, address rewardsVault,
                 address emissionManager, uint128 distributionDuration)
         StakedAaveV3(stakedToken, rewardToken, unstakeWindow, rewardsVault,
@@ -46,6 +54,10 @@ contract StakedAaveV3Harness is StakedAaveV3 {
     function _getExchangeRateWrapper(uint256 totalAssets, uint256 totalShares) public pure returns (uint216) {
         return _getExchangeRate(totalAssets, totalShares);
     }
+
+
+
+
 
 
     // returns user's token balance, used in some community rules
@@ -91,4 +103,13 @@ contract StakedAaveV3Harness is StakedAaveV3 {
     function getDelegationMode(address user) public view returns (DelegationMode) {
         return _balances[user].delegationMode;
     }
+
+  function __getPowerCurrent(address user, GovernancePowerType delegationType)
+    public
+    view
+    virtual
+    returns (uint256)
+  {
+      return BaseDelegation.getPowerCurrent(user,delegationType);
+  }
 }

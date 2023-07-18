@@ -1,11 +1,25 @@
-// SPDX-License-Identifier: agpl-3.0
+// SPDX-License-Identifier: MIT
+
+/**
+
+  This is an extension of the harnessed AaveTokenV3 with added getters on the _balances fields.
+  The imported harnessed AaveTokenV3 contract uses uint8 instead of an enum for delegation state.
+
+  This modification is introduced to bypass a current Certora Prover limitation on accessing
+  enum fields inside CVL hooks
+
+ */
+
 pragma solidity ^0.8.0;
 
-import {StakedAaveV3} from '../munged/src/contracts/StakedAaveV3.sol';
+
+import {StakedAaveV3} from '../../../src/contracts/StakedAaveV3.sol';
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 
 import {DelegationMode} from 'aave-token-v3/DelegationAwareBalance.sol';
-import {BaseDelegation} from 'aave-token-v3/BaseDelegation.sol';
+// For some reason, the solc compiler won't compile with the following line, instead of the above one.
+// It's the same file !!!
+//import {DelegationMode} from '../../../lib/aave-token-v3/src/DelegationAwareBalance.sol';
 
 contract StakedAaveV3Harness is StakedAaveV3 {
     constructor(IERC20 stakedToken, IERC20 rewardToken, uint256 unstakeWindow, address rewardsVault,
@@ -47,48 +61,47 @@ contract StakedAaveV3Harness is StakedAaveV3 {
         return _getExchangeRate(totalAssets, totalShares);
     }
 
+    
 
-    // returns user's token balance, used in some community rules
+
+    
     function getBalance(address user) public view returns (uint104) {
         return _balances[user].balance;
     }
     
-    // returns user's delegated proposition balance
     function getDelegatedPropositionBalance(address user) public view returns (uint72) {
         return _balances[user].delegatedPropositionBalance;
     }
-
-    // returns user's delegated voting balance
+    
     function getDelegatedVotingBalance(address user) public view returns (uint72) {
         return _balances[user].delegatedVotingBalance;
     }
-
-    //returns user's delegating proposition status
+    
     function getDelegatingProposition(address user) public view returns (bool) {
+        uint8 state = uint8(_balances[user].delegationMode);
         return
-            _balances[user].delegationMode == DelegationMode.PROPOSITION_DELEGATED ||
-            _balances[user].delegationMode == DelegationMode.FULL_POWER_DELEGATED;
+            state == uint8(DelegationMode.PROPOSITION_DELEGATED) ||
+            state == uint8(DelegationMode.FULL_POWER_DELEGATED);
     }
     
-    // returns user's delegating voting status
     function getDelegatingVoting(address user) public view returns (bool) {
+        uint8 state = uint8(_balances[user].delegationMode);
         return
-            _balances[user].delegationMode == DelegationMode.VOTING_DELEGATED ||
-            _balances[user].delegationMode == DelegationMode.FULL_POWER_DELEGATED;
+            state == uint8(DelegationMode.VOTING_DELEGATED) ||
+            state == uint8(DelegationMode.FULL_POWER_DELEGATED);
     }
     
-    // returns user's voting delegate
     function getVotingDelegate(address user) public view returns (address) {
         return _votingDelegatee[user];
     }
     
-    // returns user's proposition delegate
     function getPropositionDelegate(address user) public view returns (address) {
         return _propositionDelegatee[user];
     }
     
-    // returns user's delegation state
     function getDelegationMode(address user) public view returns (DelegationMode) {
-        return _balances[user].delegationMode;
+        DelegationMode d = _balances[user].delegationMode;
+        return d;
     }
 }
+
