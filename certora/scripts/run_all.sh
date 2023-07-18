@@ -26,3 +26,7 @@ certoraRun certora/conf/allProps.conf --send_only \
            --rule airdropNotMutualized \
            --rule indexesMonotonicallyIncrease
 
+certoraRun certora/conf/token-v3-delegate.conf --send_only
+
+certoraRun certora/conf/token-v3-general.conf --send_only
+

@@ -12,12 +12,14 @@ help:
 
 munged:  $(wildcard $(CONTRACTS_DIR)/*.sol) $(PATCH)
 	rm -rf $@
-#	mkdir $@
-#	cp -r $(CONTRACTS_DIR) $@
-#	patch -p0 -d $@ < $(PATCH)
+	mkdir $@
+	cp -r ../lib $@
+	cp -r ../src $@
+	patch -p0 -d $@ < $(PATCH)
 
 record:
 	mkdir tmp
+	cp -r ../lib tmp
 	cp -r ../src tmp
 	diff -ruN tmp $(MUNGED_DIR) | sed 's+tmp/++g' | sed 's+$(MUNGED_DIR)/++g' > $(PATCH)
 	rm -rf tmp

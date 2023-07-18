@@ -1,45 +1,27 @@
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 02:00:00.000000000 +0200
-+++ .gitignore	2023-07-02 16:46:42.543068481 +0300
++++ .gitignore	2023-07-03 17:26:58.942364078 +0300
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
-diff -ruN src/contracts/StakedTokenV2.sol src/contracts/StakedTokenV2.sol
---- src/contracts/StakedTokenV2.sol	2023-07-02 16:53:46.351068481 +0300
-+++ src/contracts/StakedTokenV2.sol	2023-07-02 16:33:34.183068481 +0300
-@@ -90,6 +90,7 @@
-   /// @inheritdoc IStakedTokenV2
-   function getTotalRewardsBalance(address staker)
-     external
-+    override
-     view
-     returns (uint256)
-   {
 diff -ruN src/contracts/StakedTokenV3.sol src/contracts/StakedTokenV3.sol
---- src/contracts/StakedTokenV3.sol	2023-07-02 16:53:46.351068481 +0300
-+++ src/contracts/StakedTokenV3.sol	2023-07-02 16:40:03.003068481 +0300
-@@ -164,7 +164,7 @@
+--- src/contracts/StakedTokenV3.sol	2023-07-18 12:14:22.376452953 +0300
++++ src/contracts/StakedTokenV3.sol	2023-07-18 12:08:37.860796462 +0300
+@@ -580,11 +580,14 @@
+     address user,
+     GovernancePowerType delegationType
+   ) public view override returns (uint256) {
+-    return
+-      (super.getPowerCurrent(user, delegationType) * EXCHANGE_RATE_UNIT) /
+-      getExchangeRate();
++      return mul_div_munged(super.getPowerCurrent(user, delegationType), getExchangeRate());
    }
  
-   /// @inheritdoc IStakedTokenV3
--  function previewStake(uint256 assets) public view returns (uint256) {
-+  function previewStake(uint256 assets) public override view returns (uint256) {
-     return (assets * _currentExchangeRate) / EXCHANGE_RATE_UNIT;
-   }
- 
-@@ -335,13 +335,14 @@
-   /// @inheritdoc IStakedTokenV3
-   function setCooldownSeconds(uint256 cooldownSeconds)
-     external
-+    override
-     onlyCooldownAdmin
-   {
-     _setCooldownSeconds(cooldownSeconds);
-   }
- 
-   /// @inheritdoc IStakedTokenV3
--  function getCooldownSeconds() external view returns (uint256) {
-+  function getCooldownSeconds() external override view returns (uint256) {
-     return _cooldownSeconds;
-   }
- 
++  function mul_div_munged(uint256 x, uint256 denominator) internal view returns (uint256) {
++      return (x*EXCHANGE_RATE_UNIT)/denominator;
++  }
++
++  
+   function _setDelegationState(
+     address user,
+     DelegationState memory delegationState
