@@ -5,8 +5,8 @@ diff -ruN .gitignore .gitignore
 +*
 +!.gitignore
 diff -ruN src/contracts/StakedTokenV3.sol src/contracts/StakedTokenV3.sol
---- src/contracts/StakedTokenV3.sol	2023-07-18 12:14:22.376452953 +0300
-+++ src/contracts/StakedTokenV3.sol	2023-07-18 12:08:37.860796462 +0300
+--- src/contracts/StakedTokenV3.sol	2023-07-26 19:06:56.827296427 +0300
++++ src/contracts/StakedTokenV3.sol	2023-07-26 11:49:16.510757673 +0300
 @@ -580,11 +580,14 @@
      address user,
      GovernancePowerType delegationType
@@ -17,7 +17,7 @@ diff -ruN src/contracts/StakedTokenV3.sol src/contracts/StakedTokenV3.sol
 +      return mul_div_munged(super.getPowerCurrent(user, delegationType), getExchangeRate());
    }
  
-+  function mul_div_munged(uint256 x, uint256 denominator) internal view returns (uint256) {
++  function mul_div_munged(uint256 x, uint256 denominator) public view returns (uint256) {
 +      return (x*EXCHANGE_RATE_UNIT)/denominator;
 +  }
 +
