@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {StakedAaveV3} from '../munged/src/contracts/StakedAaveV3.sol';
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
+import {ECDSA} from 'openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol';
 
 import {DelegationMode} from 'aave-token-v3/DelegationAwareBalance.sol';
 import {BaseDelegation} from 'aave-token-v3/BaseDelegation.sol';
@@ -90,5 +91,57 @@ contract StakedAaveV3Harness is StakedAaveV3 {
     // returns user's delegation state
     function getDelegationMode(address user) public view returns (DelegationMode) {
         return _balances[user].delegationMode;
+    }
+
+    function ecrecoverWrapper(
+                              bytes32 hash,
+                              uint8 v,
+                              bytes32 r,
+                              bytes32 s
+    ) public pure returns (address) {
+        return ecrecover(hash, v, r, s);
+    }
+    
+    function computeMetaDelegateHash(address delegator, address delegatee, uint256 deadline, uint256 nonce)
+        public view returns (bytes32) {
+        bytes32 digest =
+            ECDSA.toTypedDataHash(
+                                  _getDomainSeparator(),
+                                  keccak256(abi.encode(DELEGATE_TYPEHASH, delegator, delegatee, nonce, deadline))
+            );
+        return digest;
+    }
+
+    function computeMetaDelegateByTypeHash(
+                                           address delegator,
+                                           address delegatee,
+                                           GovernancePowerType delegationType,
+                                           uint256 deadline,
+                                           uint256 nonce
+    ) public view returns (bytes32) {
+        bytes32 digest = ECDSA.toTypedDataHash(
+                                               _getDomainSeparator(),
+                                               keccak256(
+                                                         abi.encode(
+                                                                    DELEGATE_BY_TYPE_TYPEHASH,
+                                                                    delegator,
+                                                                    delegatee,
+                                                                    delegationType,
+                                                                    nonce,
+                                                                    deadline
+                                                         )
+                                               )
+        );
+        
+        return digest;
+    }
+    
+    function getPowerCurrent_BaseDelegation(address user, GovernancePowerType delegationType)
+        public view virtual returns (uint256) {
+        return BaseDelegation.getPowerCurrent(user,delegationType);
+    }
+    
+    function getNonce(address user) public view returns (uint256) {
+        return _nonces[user];
     }
 }

@@ -63,5 +63,10 @@ jobs:
           - allProps.conf --rule totalSupplyDoesNotDropToZero
           - allProps.conf --rule slashingIncreaseExchangeRate
           - allProps.conf --rule returnFundsDecreaseExchangeRate
-          - token-v3-delegate.conf
-          - token-v3-general.conf
+          - token-v3-general.conf --rule delegateCorrectness
+          - token-v3-general.conf --rule sumOfVBalancesCorrectness
+          - token-v3-general.conf --rule sumOfPBalancesCorrectness
+          - token-v3-general.conf --rule transferDoesntChangeDelegationMode
+          - token-v3-erc20.conf
+          - token-v3-delegate.conf 
+          - token-v3-community.conf

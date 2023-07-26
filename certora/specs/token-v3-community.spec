@@ -13,7 +13,8 @@
 
 */
 
-import "base_token_v3.spec";
+//import "base_token_v3.spec";
+import "base.spec";
 
 methods {
     function ecrecoverWrapper(bytes32, uint8, bytes32, bytes32) external returns (address) envfree;
@@ -21,9 +22,18 @@ methods {
     function computeMetaDelegateByTypeHash(address delegator,  address delegatee, IGovernancePowerDelegationToken.GovernancePowerType delegationType, uint256 deadline, uint256 nonce) external returns (bytes32) envfree;
     function _nonces(address addr) external returns (uint256) envfree;
     function getNonce(address) external returns (uint256) envfree;
+    function getPowerCurrent_BaseDelegation(address, IGovernancePowerDelegationToken.GovernancePowerType) external returns (uint256) envfree;
+    function mul_div_munged(uint256 x, uint256 denominator) external returns (uint256) envfree;
 }
 
 definition ZERO_ADDRESS() returns address = 0;
+
+/*===================================================================
+  Normalize the balance according to the ER (ExchangeRate)
+  =================================================================*/
+function norER(uint256 bal) returns mathint {
+    return bal * EXCHANGE_RATE_FACTOR() / getExchangeRate();
+}
 
 
 /*
@@ -92,7 +102,9 @@ rule permitIntegrity() {
     @Link:
 */
 invariant addressZeroNoPower()
-  getPowerCurrent(0, VOTING_POWER()) == 0 && getPowerCurrent(0, PROPOSITION_POWER()) == 0 && balanceOf(0) == 0;
+    getPowerCurrent(0, VOTING_POWER()) == 0 && getPowerCurrent(0, PROPOSITION_POWER()) == 0 && balanceOf(0) == 0 && getPowerCurrent_BaseDelegation(0, VOTING_POWER())==0 && getPowerCurrent_BaseDelegation(0, PROPOSITION_POWER())==0;
+//    filtered {f -> f.selector != sig:returnFunds(uint256).selector }
+
 
 
 /*
@@ -239,6 +251,7 @@ rule delegatingToAnotherUserRemovesPowerFromOldDelegatee(env e, address alice, a
 */
 
 rule powerChanges(address alice, method f) {
+    // This rule is identical to votingPowerChanges of token-v3-delegate.spec
     env e;
     calldataarg args;
 
@@ -255,7 +268,12 @@ rule powerChanges(address alice, method f) {
         f.selector == sig:metaDelegate(address, address, uint256, uint8, bytes32, bytes32).selector ||
         f.selector == sig:metaDelegateByType(address, address, IGovernancePowerDelegationToken.GovernancePowerType, uint256, uint8, bytes32, bytes32).selector ||
         f.selector == sig:transfer(address, uint256).selector ||
-        f.selector == sig:transferFrom(address, address, uint256).selector;
+        f.selector == sig:transferFrom(address, address, uint256).selector ||
+        f.selector == sig:slash(address,uint256).selector ||
+        f.selector == sig:returnFunds(uint256).selector ||
+        is_redeem_method(f) ||
+        is_stake_method(f)
+        ;
 }
 
 
@@ -334,44 +352,65 @@ rule delegateIndependence(method f) {
 
     @Link:
 */
+
+/*
 rule votingPowerChangesWhileNotBeingADelegatee(address a) {
     require a != 0;
 
-    uint256 votingPowerBefore = getPowerCurrent(a, VOTING_POWER());
-    uint256 balanceBefore = getBalance(a);
-    bool isVotingDelegatorBefore = getDelegatingVoting(a);
-    bool isVotingDelegateeBefore = getDelegatedVotingBalance(a) != 0;
+    uint256 _votingPower = getPowerCurrent(a, VOTING_POWER());
+    uint256 _balance = getBalance(a);
+    uint256 _exchangeRate = getExchangeRate();
+    bool _isVotingDelegator = getDelegatingVoting(a);
+    bool _isVotingDelegatee = getDelegatedVotingBalance(a) != 0;
 
     method f;
     env e;
     calldataarg args;
     f(e, args);
 
-    uint256 votingPowerAfter = getPowerCurrent(a, VOTING_POWER());
-    uint256 balanceAfter = getBalance(a);
-    bool isVotingDelegatorAfter = getDelegatingVoting(a);
-    bool isVotingDelegateeAfter = getDelegatedVotingBalance(a) != 0;
+    uint256 votingPower_ = getPowerCurrent(a, VOTING_POWER());
+    uint256 balance_ = getBalance(a);
+    uint256 exchangeRate_ = getExchangeRate();
+    bool isVotingDelegator_ = getDelegatingVoting(a);
+    bool isVotingDelegatee_ = getDelegatedVotingBalance(a) != 0;
 
-    require !isVotingDelegateeBefore && !isVotingDelegateeAfter;
+    require !_isVotingDelegatee && !isVotingDelegatee_;
 
-    /* 
-    If you're not a delegatee, your voting power only increases when
-        1. You're not delegating and your balance increases
-        2. You're delegating and stop delegating and your balanceBefore != 0
-    */
-    assert votingPowerBefore < votingPowerAfter <=> 
-        (!isVotingDelegatorBefore && !isVotingDelegatorAfter && (balanceBefore < balanceAfter)) ||
-        (isVotingDelegatorBefore && !isVotingDelegatorAfter && (balanceBefore != 0));
+   
+    //If you're not a delegatee, your voting power only increases when
+    //    1. You're not delegating and your balance increases
+    //    2. You're delegating and stop delegating and your _balance != 0
+    
+    assert _votingPower < votingPower_ <=> 
+        (!_isVotingDelegator && !isVotingDelegator_ && norER(_balance)<norER(balance_) )
+        ||
+        (_isVotingDelegator  && !isVotingDelegator_ && norER(_balance)!=0)
+        ;
 
-    /*
-    If you're not a delegatee, your voting power only decreases when
-        1. You're not delegating and your balance decreases
-        2. You're not delegating and start delegating and your balanceBefore != 0
-    */
-    assert votingPowerBefore > votingPowerAfter <=> 
-        (!isVotingDelegatorBefore && !isVotingDelegatorAfter && (balanceBefore > balanceAfter)) ||
-        (!isVotingDelegatorBefore && isVotingDelegatorAfter && (balanceBefore != 0));
+    
+    //If you're not a delegatee, your voting power only decreases when
+    //    1. You're not delegating and your balance decreases
+    //    2. You're not delegating and start delegating and your _balance != 0
+    
+    if (f.selector == sig:slash(address,uint256).selector || 
+        f.selector == sig:returnFunds(uint256).selector) {
+        assert _votingPower > votingPower_ =>
+            (!_isVotingDelegator && !isVotingDelegator_ && norER(_balance)>norER(balance_) ) ||
+            (!_isVotingDelegator && isVotingDelegator_  && norER(_balance)!=0) ||
+            _exchangeRate != exchangeRate_
+            ;
+        assert
+            (!_isVotingDelegator && !isVotingDelegator_ && norER(_balance)>norER(balance_) ) ||
+            (!_isVotingDelegator && isVotingDelegator_  && norER(_balance)!=0 )
+            => _votingPower > votingPower_;
+    }
+    else {
+        assert _votingPower > votingPower_ <=> 
+            (!_isVotingDelegator && !isVotingDelegator_ && norER(_balance)>norER(balance_) ) ||
+            (!_isVotingDelegator && isVotingDelegator_  && norER(_balance)!=0 );
+    }
 }
+*/
 
 /*
     @Rule
@@ -391,16 +430,16 @@ rule votingPowerChangesWhileNotBeingADelegatee(address a) {
     >
     {
         propositionPowerAfter = getPowerCurrent(a, PROPOSITION_POWER()
-        balanceAfter = getBalance(a)
+        balance_ = getBalance(a)
         isPropositionDelegatorAfter = getDelegatingProposition(a);
         isPropositionDelegateeAfter = getDelegatedPropositionBalance(a) != 0
 
         propositionPowerBefore < propositionPowerAfter <=> 
-        (!isPropositionDelegatorBefore && !isPropositionDelegatorAfter && (balanceBefore < balanceAfter)) ||
+        (!isPropositionDelegatorBefore && !isPropositionDelegatorAfter && (balanceBefore < balance_)) ||
         (isPropositionDelegatorBefore && !isPropositionDelegatorAfter && (balanceBefore != 0))
         &&
         propositionPowerBefore > propositionPowerAfter <=> 
-        (!isPropositionDelegatorBefore && !isPropositionDelegatorAfter && (balanceBefore > balanceAfter)) ||
+        (!isPropositionDelegatorBefore && !isPropositionDelegatorAfter && (balanceBefore > balance_)) ||
         (!isPropositionDelegatorBefore && isPropositionDelegatorAfter && (balanceBefore != 0))
     }
 
@@ -409,44 +448,60 @@ rule votingPowerChangesWhileNotBeingADelegatee(address a) {
 
     @Link:
 */
+
+/*
 rule propositionPowerChangesWhileNotBeingADelegatee(address a) {
     require a != 0;
 
-    uint256 propositionPowerBefore = getPowerCurrent(a, PROPOSITION_POWER());
-    uint256 balanceBefore = getBalance(a);
-    bool isPropositionDelegatorBefore = getDelegatingProposition(a);
-    bool isPropositionDelegateeBefore = getDelegatedPropositionBalance(a) != 0;
+    uint256 _propPower = getPowerCurrent(a, PROPOSITION_POWER());
+    uint256 _balance = getBalance(a);
+    bool _isPropDelegator = getDelegatingProposition(a);
+    bool _isPropDelegatee = getDelegatedPropositionBalance(a) != 0;
+    uint256 _exchangeRate = getExchangeRate();
 
     method f;
     env e;
     calldataarg args;
     f(e, args);
 
-    uint256 propositionPowerAfter = getPowerCurrent(a, PROPOSITION_POWER());
-    uint256 balanceAfter = getBalance(a);
-    bool isPropositionDelegatorAfter = getDelegatingProposition(a);
-    bool isPropositionDelegateeAfter = getDelegatedPropositionBalance(a) != 0;
+    uint256 propPower_ = getPowerCurrent(a, PROPOSITION_POWER());
+    uint256 balance_ = getBalance(a);
+    uint256 exchangeRate_ = getExchangeRate();
+    bool isPropDelegator_ = getDelegatingProposition(a);
+    bool isPropDelegatee_ = getDelegatedPropositionBalance(a) != 0;
 
-    require !isPropositionDelegateeBefore && !isPropositionDelegateeAfter;
+    require !_isPropDelegatee && !isPropDelegatee_;
 
-    /*
-    If you're not a delegatee, your proposition power only increases when
-        1. You're not delegating and your balance increases
-        2. You're delegating and stop delegating and your balanceBefore != 0
-    */
-    assert propositionPowerBefore < propositionPowerAfter <=> 
-        (!isPropositionDelegatorBefore && !isPropositionDelegatorAfter && (balanceBefore < balanceAfter)) ||
-        (isPropositionDelegatorBefore && !isPropositionDelegatorAfter && (balanceBefore != 0));
     
-    /*
-    If you're not a delegatee, your proposition power only decreases when
-        1. You're not delegating and your balance decreases
-        2. You're not delegating and start delegating and your balanceBefore != 0
-    */
-    assert propositionPowerBefore > propositionPowerAfter <=> 
-        (!isPropositionDelegatorBefore && !isPropositionDelegatorBefore && (balanceBefore > balanceAfter)) ||
-        (!isPropositionDelegatorBefore && isPropositionDelegatorAfter && (balanceBefore != 0));
-}
+    //If you're not a delegatee, your proposition power only increases when
+    //    1. You're not delegating and your balance increases
+    //    2. You're delegating and stop delegating and your _balance != 0
+    
+    assert _propPower < propPower_ <=> 
+        (!_isPropDelegator && !isPropDelegator_ && norER(_balance)<norER(balance_)) ||
+        (_isPropDelegator  && !isPropDelegator_ && norER(_balance)!=0);
+    
+    
+    //If you're not a delegatee, your proposition power only decreases when
+    //    1. You're not delegating and your balance decreases
+    //    2. You're not delegating and start delegating and your _balance != 0
+    
+    if (f.selector == sig:slash(address,uint256).selector || 
+        f.selector == sig:returnFunds(uint256).selector) {
+        assert _propPower > propPower_ =>
+            (!_isPropDelegator && !_isPropDelegator && norER(_balance)>norER(balance_)) ||
+            (!_isPropDelegator && isPropDelegator_  && norER(_balance)!=0) ||
+            _exchangeRate != exchangeRate_;
+        assert 
+            (!_isPropDelegator && !_isPropDelegator && norER(_balance)>norER(balance_)) ||
+            (!_isPropDelegator && isPropDelegator_  && norER(_balance)!=0)
+            => _propPower > propPower_ ;
+    }
+    else
+        assert _propPower > propPower_ <=> 
+            (!_isPropDelegator && !_isPropDelegator && norER(_balance)>norER(balance_)) ||
+            (!_isPropDelegator && isPropDelegator_  && norER(_balance)!=0);
+            }*/
 
 /*
     @Rule

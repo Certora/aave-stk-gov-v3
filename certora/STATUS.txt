@@ -21,3 +21,5 @@ Nissan work up to 19/07/2023
   - Add more spec files from Aave-v3. Currently they are not passing.
   - For CI I need to add my Certore-Key to github.
 
+
+Check: Staked_Token is currently Reward_Token !
