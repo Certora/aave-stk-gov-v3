@@ -28,5 +28,14 @@ certoraRun certora/conf/allProps.conf --send_only \
 
 certoraRun certora/conf/token-v3-delegate.conf --send_only
 
-certoraRun certora/conf/token-v3-general.conf --send_only
+certoraRun certora/conf/token-v3-general.conf --send_only --rule delegateCorrectness
+certoraRun certora/conf/token-v3-general.conf --send_only --rule sumOfVBalancesCorrectness
+certoraRun certora/conf/token-v3-general.conf --send_only --rule sumOfPBalancesCorrectness
+certoraRun certora/conf/token-v3-general.conf --send_only --rule transferDoesntChangeDelegationMode
+
+certoraRun certora/conf/token-v3-erc20.conf --send_only
+
+certoraRun certora/conf/token-v3-community.spec --send_only
+
+
 

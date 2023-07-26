@@ -1,27 +1,17 @@
 /*
-    This is a specification file for the verification of general ERC20
-    features of AaveTokenV3.sol smart contract using the Certora prover. 
-    For more information, visit: https://www.certora.com/
-
-    This file is run with scripts/erc20.sh
-    On the token harness AaveTokenV3Harness.sol
-
-    Sanity run:
-    https://prover.certora.com/output/67509/a5d16a31a49b9c9a7b71/?anonymousKey=bd108549122fd97450428a26c4ed52458793b898
+    This is a specification file for the verification of general ERC20 properties.
+    This file was adapted from AaveTokenV3.sol smart contract to STK-3.0 smart contract.
+    This file is run by the command line: 
+          certoraRun --send_only certora/scripts/token-v3-erc20.sh
+    It uses the harness file: certora/harness/StakedAaveV3Harness.sol
 */
-import "base_token_v3.spec";
-definition AAVE_MAX_SUPPLY() returns uint256 = 16000000 * 10^18;
+import "base.spec";
 
-function doesntChangeBalance(method f) returns bool {
-    return f.selector != sig:transfer(address,uint256).selector &&
-        f.selector != sig:transferFrom(address,address,uint256).selector;
-}
 
     
 
 /*
     @Rule
-
 
     @Description:
         Verify that there is no fee on transferFrom() (like potentially on USDT)
@@ -95,13 +85,19 @@ rule noFeeOnTransfer(address bob, uint256 amount) {
     assert balanceAfter == balanceBefore + amount;
 }
 
+
+
+
+
+invariant userIndex_LEQ_index(address user, address asset)
+    getUserAssetData(user,asset) <= getAssetGlobalIndex(asset);
+
+
 /*
     @Rule
 
-
     @Description:
         Token transfer works correctly. Balances are updated if not reverted. 
-        If reverted then the transfer amount was too high, or the recipient is 0.
 
     @Formula:
         {
@@ -112,9 +108,8 @@ rule noFeeOnTransfer(address bob, uint256 amount) {
             transfer(to, amount)
         >
         {
-            lastReverted => to = 0 || amount > balanceOf(msg.sender)
-            !lastReverted => balanceOf(to) = balanceToBefore + amount &&
-                            balanceOf(msg.sender) = balanceFromBefore - amount
+            balanceOf(to) = balanceToBefore + amount &&
+            balanceOf(msg.sender) = balanceFromBefore - amount
         }
 
     @Notes:
@@ -122,10 +117,7 @@ rule noFeeOnTransfer(address bob, uint256 amount) {
         The prover finds a counterexample of a reverted transfer to a blacklisted address or a transfer in a paused state.
 
     @Link:
-
 */
-
-
 rule transferCorrect(address to, uint256 amount) {
     env e;
     require e.msg.value == 0 && e.msg.sender != 0;
@@ -160,17 +152,13 @@ rule transferCorrect(address to, uint256 amount) {
     // to not overcomplicate the constraints on dvbTo and dvbFrom
     require v_delegateFrom != v_delegateTo && p_delegateFrom != p_delegateTo;
 
-    transfer@withrevert(e, to, amount);
-    bool reverted = lastReverted;
-    if (!reverted) {
-        if (e.msg.sender == to) {
-            assert balanceOf(e.msg.sender) == fromBalanceBefore;
-        } else {
-            assert to_mathint(balanceOf(e.msg.sender)) == fromBalanceBefore - amount;
-            assert to_mathint(balanceOf(to)) == toBalanceBefore + amount;
-        }
+    transfer(e, to, amount);
+    
+    if (e.msg.sender == to) {
+        assert balanceOf(e.msg.sender) == fromBalanceBefore;
     } else {
-        assert amount > fromBalanceBefore || to == 0;
+        assert to_mathint(balanceOf(e.msg.sender)) == fromBalanceBefore - amount;
+        assert to_mathint(balanceOf(to)) == toBalanceBefore + amount;
     }
 }
 
@@ -269,14 +257,17 @@ rule NoChangeTotalSupply(method f) {
     env e;
     calldataarg args;
     f(e, args);
-    assert totalSupply() == totalSupplyBefore;
+    assert totalSupply() != totalSupplyBefore =>
+        (is_redeem_method(f) || is_stake_method(f))
+        ;
 }
 
 /*
  The two rules cover the same ground as NoChangeTotalSupply.
- 
  The split into two rules is in order to make the burn/mint features of a tested token even more obvious
+ Those rules are not relevant for STK-3.0 hence removed.
 */
+/*
 rule noBurningTokens(method f) {
     uint256 totalSupplyBefore = totalSupply();
     env e;
@@ -292,6 +283,7 @@ rule noMintingTokens(method f) {
     f(e, args);
     assert totalSupply() <= totalSupplyBefore;
 }
+*/
 
 /*
     @Rule
@@ -527,11 +519,9 @@ rule OtherBalanceOnlyGoesUp(address other, method f) {
     env e;
     require other != currentContract;
     uint256 balanceBefore = balanceOf(other);
+    address from; address to; uint256 amount;
 
     if (f.selector == sig:transferFrom(address, address, uint256).selector) {
-        address from;
-        address to;
-        uint256 amount;
         require(other != from);
         require balanceOf(from) + balanceBefore < max_uint256;
         transferFrom(e, from, to, amount);
@@ -540,6 +530,15 @@ rule OtherBalanceOnlyGoesUp(address other, method f) {
         require balanceOf(e.msg.sender) + balanceBefore < max_uint256;
         calldataarg args;
         f(e, args);
+    } else if (f.selector == sig:redeemOnBehalf(address, address, uint256).selector) {
+        require(other != from);
+        require balanceOf(from) + balanceBefore < max_uint256;
+        redeemOnBehalf(e, from, to, amount);
+    } else if (f.selector == sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector) {
+        uint256 claimAmount; uint256 redeemAmount;
+        require(other != from);
+        require balanceOf(from) + balanceBefore < max_uint256;
+        claimRewardsAndRedeemOnBehalf(e, from, to, claimAmount, redeemAmount);
     } else {
         require other != e.msg.sender;
         calldataarg args;
@@ -553,7 +552,9 @@ rule noRebasing(method f, address alice) {
     env e;
     calldataarg args;
 
-    require doesntChangeBalance(f);
+    require !is_transfer_method(f)
+        && !is_stake_method(f) && !is_redeem_method(f)
+        ;
     
     uint256 balanceBefore = balanceOf(alice);
     f(e, args);

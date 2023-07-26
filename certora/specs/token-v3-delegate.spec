@@ -1,52 +1,23 @@
 
 
 /*
-    This is a specification file for the verification of delegation
-    features of AaveTokenV3.sol smart contract using the Certora prover. 
-    For more information, visit: https://www.certora.com/
-
-    This file is run with scripts/verifyDelegate.sh
-    On AaveTokenV3Harness.sol
-
-    Sanity check results: https://prover.certora.com/output/67509/021f59de6995d82ecf18/?anonymousKey=84f18dc61532a37fabfd59655fe7fe43989f1a8e
-
+    This is a specification file for the verification of delegation features.
+    This file was adapted from AaveTokenV3.sol smart contract to STK-3.0 smart contract.
+    This file is run by the command line: 
+          certoraRun --send_only certora/conf/token-v3-delegate.conf
+    It uses the harness file: certora/harness/StakedAaveV3Harness.sol
 */
 
 import "base.spec";
 
 
 methods {
+    function _.mul_div_munged(uint256 x, uint256 denominator) external =>
+        mul_div(x,denominator) expect uint256 ALL;
     function _.mul_div_munged(uint256 x, uint256 denominator) internal =>
         mul_div(x,denominator) expect uint256 ALL;
 }
 
-/*
-ghost mul_div(mathint , mathint) returns uint256 {
-    axiom forall mathint b. forall mathint D. forall mathint a. forall mathint deno.
-        //        (before + Delta == afterr) => (factor(before) + factor(Delta) == factor(afterr))
-        (b+D == a) => 
-        (mul_div(b,deno) + mul_div(D,deno)   == to_mathint(mul_div(a,deno))   ||
-         mul_div(b,deno) + mul_div(D,deno)   == to_mathint(mul_div(a,deno))+1 ||
-         mul_div(b,deno) + mul_div(D,deno)+1 == to_mathint(mul_div(a,deno))
-        );
-        }
-        */
-
-/*
-ghost mul_div(mathint , mathint) returns uint256 {
-    axiom
-        (forall mathint den. mul_div(0,den)==0)
-        &&
-        (forall mathint a. forall mathint b. forall mathint c. forall mathint d.forall mathint deno.
-        //        (before + Delta == afterr) => (factor(before) + factor(Delta) == factor(afterr))
-        (a+b==c) => 
-         (mul_div(a,deno) + mul_div(b,deno)   == mul_div(c,deno) + 0//mul_div(d,deno)  ||
-          //mul_div(b,deno) + mul_div(D,deno)   == to_mathint(mul_div(a,deno))+1 ||
-          //mul_div(b,deno) + mul_div(D,deno)+1 == to_mathint(mul_div(a,deno))
-        )
-    );
-}
-*/
 
 ghost mul_div(mathint , mathint) returns uint256 {
     axiom
@@ -59,23 +30,6 @@ ghost mul_div(mathint , mathint) returns uint256 {
         );
 }
 
-
-
-definition is_redeem_method(method f) returns bool =
-    (
-     f.selector == sig:redeem(address,uint256).selector ||
-     f.selector == sig:redeemOnBehalf(address,address,uint256).selector ||
-     f.selector == sig:claimRewardsAndRedeem(address,uint256,uint256).selector ||
-     f.selector == sig:claimRewardsAndRedeemOnBehalf(address,address,uint256,uint256).selector
-    );
-
-definition is_stake_method(method f) returns bool =
-    (
-     f.selector == sig:stake(address,uint256).selector ||
-     f.selector == sig:stakeWithPermit(address,uint256,uint256,uint8,bytes32,bytes32).selector ||
-     f.selector == sig:claimRewardsAndStake(address,uint256).selector ||
-     f.selector == sig:claimRewardsAndStakeOnBehalf(address,address,uint256).selector
-    );
 
 
 
@@ -109,9 +63,6 @@ rule powerWhenNotDelegating(address account) {
     uint256 votingPower = getPowerCurrent(account, VOTING_POWER());
     uint256 propositionPower = getPowerCurrent(account, PROPOSITION_POWER());
 
-    //nissan: I replaced the following 2 assertions with the proceeding ones.
-    //assert dvb == 0 && !isDelegatingVoting => votingPower == balance;
-    //assert dpb == 0 && !isDelegatingProposition => propositionPower == balance;
     assert dvb == 0 && !isDelegatingVoting => votingPower == mul_div(balance,getExchangeRate());
     assert dpb == 0 && !isDelegatingProposition => propositionPower == mul_div(balance,getExchangeRate());
 }
@@ -153,9 +104,6 @@ rule vpTransferWhenBothNotDelegating(address alice, address bob, address charlie
     mathint charliePowerAfter = getPowerCurrent(charlie, VOTING_POWER());
 
     assert charliePowerAfter == charliePowerBefore;
-    //nissan: I replaced the following 2 assertions with the proceeding ones.
-    //assert alicePowerAfter == alicePowerBefore - amount;
-    //assert bobPowerAfter == bobPowerBefore + amount;
     assert upto_1(alicePowerAfter, alicePowerBefore - mul_div(amount,getExchangeRate()));
     assert upto_1(bobPowerAfter, bobPowerBefore + mul_div(amount,getExchangeRate()));
 }
@@ -191,9 +139,6 @@ rule ppTransferWhenBothNotDelegating(address alice, address bob, address charlie
     mathint charliePowerAfter = getPowerCurrent(charlie, PROPOSITION_POWER());
 
     assert charliePowerAfter == charliePowerBefore;
-    //nissan: I replaced the following 2 assertions with the proceeding ones.
-    //assert alicePowerAfter == alicePowerBefore - amount;
-    //assert bobPowerAfter == bobPowerBefore + amount;
     assert upto_1(alicePowerAfter, alicePowerBefore - mul_div(amount,getExchangeRate()));
     assert upto_1(bobPowerAfter, bobPowerBefore + mul_div(amount,getExchangeRate()));
 }
@@ -236,10 +181,6 @@ rule vpDelegateWhenBothNotDelegating(address alice, address bob, address charlie
 
     assert getVotingDelegate(alice) == bob;
     assert charliePowerAfter == charliePowerBefore;
-    //nissan: I replaced the following 2 assertions with the proceeding ones.
-    //assert alicePowerAfter == alicePowerBefore - aliceBalance;
-    //assert bobPowerAfter == bobPowerBefore + (aliceBalance / DELEGATED_POWER_DIVIDER()) * DELEGATED_POWER_DIVIDER();
-
     assert upto_1(alicePowerAfter, alicePowerBefore - mul_div(aliceBalance,getExchangeRate()) );
     assert upto_1(bobPowerAfter, bobPowerBefore + normalizeNew(balanceOf(alice)));
 }
@@ -282,9 +223,6 @@ rule ppDelegateWhenBothNotDelegating(address alice, address bob, address charlie
 
     assert getPropositionDelegate(alice) == bob;
     assert charliePowerAfter == charliePowerBefore;
-    //nissan: I replaced the following 2 assertions with the proceeding ones.
-    //assert alicePowerAfter == alicePowerBefore - aliceBalance;
-    //assert bobPowerAfter == bobPowerBefore + (aliceBalance / DELEGATED_POWER_DIVIDER()) * DELEGATED_POWER_DIVIDER();
     assert upto_1(alicePowerAfter, alicePowerBefore - mul_div(aliceBalance,getExchangeRate()) );
     assert upto_1(bobPowerAfter, bobPowerBefore + normalizeNew(balanceOf(alice)));
 }
@@ -335,10 +273,6 @@ rule vpTransferWhenOnlyOneIsDelegating(address alice, address bob, address charl
 
     assert alicePowerBefore == alicePowerAfter;
     assert charliePowerBefore == charliePowerAfter;
-    //nissan: I replaced the following 2 assertions with the proceeding ones. 
-    //assert bobPowerAfter == bobPowerBefore + amount;
-    //assert aliceDelegatePowerAfter == 
-    //  aliceDelegatePowerBefore - normalize(aliceBalanceBefore) + normalize(aliceBalanceAfter);
     assert upto_1(bobPowerAfter, bobPowerBefore + mul_div(amount,getExchangeRate()));
     assert upto_2
         (aliceDelegatePowerAfter,
@@ -389,10 +323,6 @@ rule ppTransferWhenOnlyOneIsDelegating(address alice, address bob, address charl
     // still zero
     assert alicePowerBefore == alicePowerAfter;
     assert charliePowerBefore == charliePowerAfter;
-    //nissan: I replaced the following 2 assertions with the proceeding ones. 
-    //assert bobPowerAfter == bobPowerBefore + amount;
-    //assert aliceDelegatePowerAfter == 
-    //  aliceDelegatePowerBefore - normalize(aliceBalanceBefore) + normalize(aliceBalanceAfter);
     assert upto_1(bobPowerAfter, bobPowerBefore + mul_div(amount,getExchangeRate()));
     assert upto_2
         (aliceDelegatePowerAfter,
@@ -433,10 +363,6 @@ rule vpStopDelegatingWhenOnlyOneIsDelegating(address alice, address charlie) {
     mathint aliceDelegatePowerAfter = getPowerCurrent(aliceDelegate, VOTING_POWER());
 
     assert charliePowerAfter == charliePowerBefore;
-
-    //nissan: I replaced the following 2 assertions with the proceeding ones.
-    //assert alicePowerAfter == alicePowerBefore + balanceOf(alice);
-    //assert aliceDelegatePowerAfter == aliceDelegatePowerBefore - normalize(balanceOf(alice));
     assert upto_1(alicePowerAfter, alicePowerBefore + mul_div(balanceOf(alice), getExchangeRate()));
     assert upto_1(aliceDelegatePowerAfter, aliceDelegatePowerBefore-normalizeNew(balanceOf(alice)));
 }
@@ -473,10 +399,6 @@ rule ppStopDelegatingWhenOnlyOneIsDelegating(address alice, address charlie) {
     mathint aliceDelegatePowerAfter = getPowerCurrent(aliceDelegate, PROPOSITION_POWER());
 
     assert charliePowerAfter == charliePowerBefore;
-
-    //nissan: I replaced the following 2 assertions with the proceeding ones.
-    //assert alicePowerAfter == alicePowerBefore + balanceOf(alice);
-    //assert aliceDelegatePowerAfter == aliceDelegatePowerBefore - normalize(balanceOf(alice));
     assert upto_1(alicePowerAfter, alicePowerBefore+mul_div(balanceOf(alice), getExchangeRate()));
     assert upto_1(aliceDelegatePowerAfter, aliceDelegatePowerBefore - normalizeNew(balanceOf(alice)));
 }
@@ -519,11 +441,6 @@ rule vpChangeDelegateWhenOnlyOneIsDelegating(address alice, address delegate2, a
     assert alicePowerBefore == alicePowerAfter;
     assert aliceDelegateAfter == delegate2;
     assert charliePowerAfter == charliePowerBefore;
-
-    //nissan: I replaced the following 2 assertions with the proceeding ones.
-    //assert aliceDelegatePowerAfter == aliceDelegatePowerBefore - normalize(balanceOf(alice));
-    //assert delegate2PowerAfter == delegate2PowerBefore + normalize(balanceOf(alice));
-
     assert upto_1(aliceDelegatePowerAfter, aliceDelegatePowerBefore - normalizeNew(balanceOf(alice)));
     assert upto_1(delegate2PowerAfter, delegate2PowerBefore + normalizeNew(balanceOf(alice)));
 }
@@ -566,10 +483,6 @@ rule ppChangeDelegateWhenOnlyOneIsDelegating(address alice, address delegate2, a
     assert alicePowerBefore == alicePowerAfter;
     assert aliceDelegateAfter == delegate2;
     assert charliePowerAfter == charliePowerBefore;
-
-    //nissan: I replaced the following 2 assertions with the proceeding ones.
-    //assert aliceDelegatePowerAfter == aliceDelegatePowerBefore - normalize(balanceOf(alice));
-    //assert delegate2PowerAfter == delegate2PowerBefore + normalize(balanceOf(alice));
     assert upto_1(aliceDelegatePowerAfter,aliceDelegatePowerBefore - normalizeNew(balanceOf(alice)));
     assert upto_1(delegate2PowerAfter,delegate2PowerBefore + normalizeNew(balanceOf(alice)));
 }
@@ -613,9 +526,6 @@ rule vpOnlyAccount2IsDelegating(address alice, address bob, address charlie, uin
 
     assert bobPowerAfter == 0;
     assert charliePowerAfter == charliePowerBefore;
-    //nissan: I replaced the following 2 assertions with the proceeding ones. 
-    //assert alicePowerAfter == alicePowerBefore - amount;
-    //assert bobDelegatePowerAfter == bobDelegatePowerBefore - normalize(bobBalanceBefore) + normalize(bobBalanceAfter);
     assert upto_1(alicePowerAfter, alicePowerBefore - mul_div(amount,getExchangeRate()));
     assert upto_2
         (bobDelegatePowerAfter,
@@ -662,9 +572,6 @@ rule ppOnlyAccount2IsDelegating(address alice, address bob, address charlie, uin
 
     assert bobPowerAfter == 0;
     assert charliePowerAfter == charliePowerBefore;
-    //nissan: I replaced the following 2 assertions with the proceeding ones. 
-    //assert alicePowerAfter == alicePowerBefore - amount;
-    //assert bobDelegatePowerAfter == bobDelegatePowerBefore - normalize(bobBalanceBefore) + normalize(bobBalanceAfter);
     assert upto_1(alicePowerAfter, alicePowerBefore - mul_div(amount,getExchangeRate()));
     assert upto_2
         (bobDelegatePowerAfter,
@@ -717,11 +624,6 @@ rule vpTransferWhenBothAreDelegating(address alice, address bob, address charlie
 
     assert alicePowerAfter == alicePowerBefore;
     assert bobPowerAfter == bobPowerBefore;
-    
-    //nissan: I replaced the following 2 assertions with the proceeding ones. 
-    //    assert aliceDelegatePowerAfter == aliceDelegatePowerBefore - normalize(aliceBalanceBefore) 
-    //    + normalize(aliceBalanceAfter);
-    //assert bobDelegatePowerAfter == bobDelegatePowerBefore - normalize(bobBalanceBefore) + normalize(bobBalanceAfter);
     assert upto_2(aliceDelegatePowerAfter,
                   aliceDelegatePowerBefore - normalizeNew(aliceBalanceBefore) + normalizeNew(aliceBalanceAfter));
     assert upto_2(bobDelegatePowerAfter,
@@ -772,10 +674,6 @@ rule ppTransferWhenBothAreDelegating(address alice, address bob, address charlie
 
     assert alicePowerAfter == alicePowerBefore;
     assert bobPowerAfter == bobPowerBefore;
-    //nissan: I replaced the following 2 assertions with the proceeding ones. 
-    //assert aliceDelegatePowerAfter == aliceDelegatePowerBefore - normalize(aliceBalanceBefore) 
-    //  + normalizeNew(aliceBalanceAfter);
-    //assert bobDelegatePowerAfter == bobDelegatePowerBefore - normalize(bobBalanceBefore) + normalize(bobBalanceAfter);
     assert upto_2(aliceDelegatePowerAfter,
                   aliceDelegatePowerBefore - normalizeNew(aliceBalanceBefore) + normalizeNew(aliceBalanceAfter));
     assert upto_2(bobDelegatePowerAfter,
@@ -818,8 +716,7 @@ rule votingDelegateChanges(address alice, method f) {
 
     @Description:
         Verify that an account's voting and proposition power changes only as a result of a call to
-        the delegation and transfer functions.
-        nissan: added also slash, returnFunds, and redeem/stake methods.
+        the delegation, transfer, slash, returnFunds, and redeem/stake methods.
 
     @Note:
 
@@ -915,9 +812,6 @@ rule cantDelegateTwice(address _delegate) {
     mathint votingPowerAfter2 = getPowerCurrent(_delegate, VOTING_POWER());
     mathint propPowerAfter2 = getPowerCurrent(_delegate, PROPOSITION_POWER());
 
-    //nissan: I replaced the following 2 assertions with the proceeding ones.
-    //assert votingPowerAfter == votingPowerBefore + normalize(balanceOf(e.msg.sender));
-    //assert propPowerAfter == propPowerBefore + normalize(balanceOf(e.msg.sender));
     assert upto_1 (votingPowerAfter, votingPowerBefore + normalizeNew(balanceOf(e.msg.sender)));
     assert upto_1 (propPowerAfter, propPowerBefore + normalizeNew(balanceOf(e.msg.sender)));
     assert votingPowerAfter2 == votingPowerAfter && propPowerAfter2 == propPowerAfter;
