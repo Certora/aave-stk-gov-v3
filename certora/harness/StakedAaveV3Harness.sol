@@ -79,12 +79,12 @@ contract StakedAaveV3Harness is StakedAaveV3 {
     }
     
     // returns user's voting delegate
-    function getVotingDelegate(address user) public view returns (address) {
+    function getVotingDelegatee(address user) public view returns (address) {
         return _votingDelegatee[user];
     }
     
     // returns user's proposition delegate
-    function getPropositionDelegate(address user) public view returns (address) {
+    function getPropositionDelegatee(address user) public view returns (address) {
         return _propositionDelegatee[user];
     }
     
