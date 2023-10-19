@@ -1,12 +1,12 @@
 diff -ruN .gitignore .gitignore
 --- .gitignore	1970-01-01 02:00:00.000000000 +0200
-+++ .gitignore	2023-10-16 17:44:06.000000000 +0300
++++ .gitignore	2023-10-19 19:12:23.020667425 +0300
 @@ -0,0 +1,2 @@
 +*
 +!.gitignore
 diff -ruN lib/aave-token-v3/src/BaseDelegation.sol lib/aave-token-v3/src/BaseDelegation.sol
---- lib/aave-token-v3/src/BaseDelegation.sol	2023-10-16 22:21:04.405765376 +0300
-+++ lib/aave-token-v3/src/BaseDelegation.sol	2023-10-16 22:20:45.120127595 +0300
+--- lib/aave-token-v3/src/BaseDelegation.sol	2023-10-19 19:54:52.212639074 +0300
++++ lib/aave-token-v3/src/BaseDelegation.sol	2023-10-19 19:12:23.020667425 +0300
 @@ -374,17 +374,31 @@
      bool willDelegate
    ) internal pure returns (DelegationState memory) {
@@ -49,95 +49,10 @@ diff -ruN lib/aave-token-v3/src/BaseDelegation.sol lib/aave-token-v3/src/BaseDel
      }
      return userState;
    }
-diff -ruN src/contracts/StakedAaveV3.sol src/contracts/StakedAaveV3.sol
---- src/contracts/StakedAaveV3.sol	2023-10-16 22:21:04.601863374 +0300
-+++ src/contracts/StakedAaveV3.sol	2023-10-16 17:44:06.000000000 +0300
-@@ -7,6 +7,7 @@
- import {IGhoVariableDebtTokenTransferHook} from '../interfaces/IGhoVariableDebtTokenTransferHook.sol';
- import {SafeCast} from '../lib/SafeCast.sol';
- import {IStakedAaveV3} from '../interfaces/IStakedAaveV3.sol';
-+import {IERC20WithPermit} from '../interfaces/IERC20WithPermit.sol';
- 
- /**
-  * @title StakedAaveV3
-@@ -77,6 +78,27 @@
-     return _claimRewardsAndStakeOnBehalf(from, to, amount);
-   }
- 
-+  /// @inheritdoc IStakedAaveV3
-+  function stakeWithPermit(
-+    address from,
-+    uint256 amount,
-+    uint256 deadline,
-+    uint8 v,
-+    bytes32 r,
-+    bytes32 s
-+  ) external override {
-+    IERC20WithPermit(address(STAKED_TOKEN)).permit(
-+      from,
-+      address(this),
-+      amount,
-+      deadline,
-+      v,
-+      r,
-+      s
-+    );
-+    _stake(from, from, amount);
-+  }
-+
-   /**
-    * @dev Writes a snapshot before any operation involving transfer of value: _transfer, _mint and _burn
-    * - On _transfer, it writes snapshots for both "from" and "to"
 diff -ruN src/contracts/StakedTokenV3.sol src/contracts/StakedTokenV3.sol
---- src/contracts/StakedTokenV3.sol	2023-10-16 22:21:04.601863374 +0300
-+++ src/contracts/StakedTokenV3.sol	2023-10-16 17:44:06.000000000 +0300
-@@ -3,8 +3,6 @@
- 
- import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
- import {IERC20Metadata} from 'openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol';
--import {BaseDelegation} from 'aave-token-v3/BaseDelegation.sol';
--
- import {DistributionTypes} from '../lib/DistributionTypes.sol';
- import {SafeERC20} from '../lib/SafeERC20.sol';
- import {IAaveDistributionManager} from '../interfaces/IAaveDistributionManager.sol';
-@@ -14,7 +12,7 @@
- import {PercentageMath} from '../lib/PercentageMath.sol';
- import {RoleManager} from '../utils/RoleManager.sol';
- import {SafeCast} from '../lib/SafeCast.sol';
--import {IERC20WithPermit} from '../interfaces/IERC20WithPermit.sol';
-+import {BaseDelegation} from 'aave-token-v3/BaseDelegation.sol';
- 
- /**
-  * @title StakedTokenV3
-@@ -167,27 +165,6 @@
-     _stake(msg.sender, to, amount);
-   }
- 
--  /// @inheritdoc IStakedTokenV3
--  function stakeWithPermit(
--    address from,
--    uint256 amount,
--    uint256 deadline,
--    uint8 v,
--    bytes32 r,
--    bytes32 s
--  ) external override {
--    IERC20WithPermit(address(STAKED_TOKEN)).permit(
--      from,
--      address(this),
--      amount,
--      deadline,
--      v,
--      r,
--      s
--    );
--    _stake(from, from, amount);
--  }
--
-   /// @inheritdoc IStakedTokenV2
-   function cooldown() external override(IStakedTokenV2, StakedTokenV2) {
-     _cooldown(msg.sender);
-@@ -603,11 +580,14 @@
+--- src/contracts/StakedTokenV3.sol	2023-10-19 19:54:52.264639073 +0300
++++ src/contracts/StakedTokenV3.sol	2023-10-19 19:54:06.564639582 +0300
+@@ -616,11 +616,14 @@
      address user,
      GovernancePowerType delegationType
    ) public view override returns (uint256) {
@@ -145,67 +60,13 @@ diff -ruN src/contracts/StakedTokenV3.sol src/contracts/StakedTokenV3.sol
 -      (super.getPowerCurrent(user, delegationType) * EXCHANGE_RATE_UNIT) /
 -      getExchangeRate();
 +      return mul_div_munged(super.getPowerCurrent(user, delegationType), getExchangeRate());
-+  }
-+
-+  function mul_div_munged(uint256 x, uint256 denominator) public view returns (uint256) {
-+      return (x*EXCHANGE_RATE_UNIT)/denominator;
    }
  
-+  
++  function mul_div_munged(uint256 x, uint256 denominator) public view returns (uint256) {
++      return (x*EXCHANGE_RATE_UNIT)/denominator;
++  }
++
++
    function _setDelegationState(
      address user,
      DelegationState memory delegationState
-diff -ruN src/interfaces/IStakedAaveV3.sol src/interfaces/IStakedAaveV3.sol
---- src/interfaces/IStakedAaveV3.sol	2023-10-16 22:21:04.601863374 +0300
-+++ src/interfaces/IStakedAaveV3.sol	2023-10-16 17:44:06.000000000 +0300
-@@ -36,4 +36,22 @@
-     address to,
-     uint256 amount
-   ) external returns (uint256);
-+
-+  /**
-+   * @dev Allows staking a certain amount of STAKED_TOKEN with gasless approvals (permit)
-+   * @param from The address staking the token
-+   * @param amount The amount to be staked
-+   * @param deadline The permit execution deadline
-+   * @param v The v component of the signed message
-+   * @param r The r component of the signed message
-+   * @param s The s component of the signed message
-+   */
-+  function stakeWithPermit(
-+    address from,
-+    uint256 amount,
-+    uint256 deadline,
-+    uint8 v,
-+    bytes32 r,
-+    bytes32 s
-+  ) external;
- }
-diff -ruN src/interfaces/IStakedTokenV3.sol src/interfaces/IStakedTokenV3.sol
---- src/interfaces/IStakedTokenV3.sol	2023-10-16 22:21:04.601863374 +0300
-+++ src/interfaces/IStakedTokenV3.sol	2023-10-16 17:44:06.000000000 +0300
-@@ -25,24 +25,6 @@
-   event SlashingSettled();
- 
-   /**
--   * @dev Allows staking a certain amount of STAKED_TOKEN with gasless approvals (permit)
--   * @param from The address staking the token
--   * @param amount The amount to be staked
--   * @param deadline The permit execution deadline
--   * @param v The v component of the signed message
--   * @param r The r component of the signed message
--   * @param s The s component of the signed message
--   */
--  function stakeWithPermit(
--    address from,
--    uint256 amount,
--    uint256 deadline,
--    uint8 v,
--    bytes32 r,
--    bytes32 s
--  ) external;
--
--  /**
-    * @dev Returns the current exchange rate
-    * @return exchangeRate as 18 decimal precision uint216
-    */

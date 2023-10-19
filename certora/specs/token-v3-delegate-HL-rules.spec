@@ -64,7 +64,7 @@ definition NN(mathint bal) returns mathint =  mul_div(bal/(10^10)*(10^10),mirror
 
 
 definition is_stake_redeem_method(method f) returns bool =
-    f.selector == sig:stakeWithPermit(address,uint256,uint256,uint8,bytes32,bytes32).selector ||
+    f.selector == sig:stakeWithPermit(uint256,uint256,uint8,bytes32,bytes32).selector ||
     f.selector == sig:redeem(address,uint256).selector ||
     f.selector == sig:claimRewardsAndStake(address,uint256).selector ||
     f.selector == sig:claimRewardsAndRedeemOnBehalf(address,address,uint256,uint256).selector ||
@@ -224,7 +224,7 @@ invariant inv_voting_power_correct(address user)
         mirror_delegationMode[user]==VOTING_DELEGATED()) ?
        0 : mul_div(mirror_balance[user],mirror_currentExchangeRate))
     )
-    filtered {f -> !is_stake_redeem_method(f)}
+//    filtered {f -> !is_stake_redeem_method(f)}
 {
     preserved with (env e) {
         requireInvariant user_cant_voting_delegate_to_himself();
@@ -242,7 +242,7 @@ invariant inv_proposition_power_correct(address user)
         mirror_delegationMode[user]==PROPOSITION_DELEGATED()) ?
        0 : mul_div(mirror_balance[user],mirror_currentExchangeRate))
     )
-    filtered {f -> !is_stake_redeem_method(f)}
+//filtered {f -> !is_stake_redeem_method(f)}
 {
     preserved with (env e) {
         requireInvariant user_cant_proposition_delegate_to_himself();
@@ -322,7 +322,7 @@ invariant user_cant_proposition_delegate_to_himself()
     @Link:
 */
 rule vp_change_in_balance_affect_power_DELEGATEE(method f,address bob,address alice1,address alice2)
-filtered {f -> !is_stake_redeem_method(f)}
+//filtered {f -> !is_stake_redeem_method(f)}
 {
     env e;
     calldataarg args;
@@ -427,7 +427,7 @@ filtered {f -> !is_stake_redeem_method(f)}
     @Link:
 */
 rule vp_change_of_balance_affect_power_NON_DELEGATEE(method f, address bob)
-    filtered {f -> !is_stake_redeem_method(f)}
+//    filtered {f -> !is_stake_redeem_method(f)}
 {
     env e;
     calldataarg args;
@@ -493,7 +493,7 @@ rule vp_change_of_balance_affect_power_NON_DELEGATEE(method f, address bob)
     @Link:
 */
 rule pp_change_in_balance_affect_power_DELEGATEE(method f,address bob,address alice1,address alice2)
-    filtered {f -> !is_stake_redeem_method(f)}
+//    filtered {f -> !is_stake_redeem_method(f)}
 {
     env e;
     calldataarg args;
@@ -599,7 +599,7 @@ rule pp_change_in_balance_affect_power_DELEGATEE(method f,address bob,address al
 */
 
 rule pp_change_of_balance_affect_power_NON_DELEGATEE(method f, address bob)
-    filtered {f -> !is_stake_redeem_method(f)}
+//    filtered {f -> !is_stake_redeem_method(f)}
 {
     env e;
     calldataarg args;
@@ -642,52 +642,3 @@ rule pp_change_of_balance_affect_power_NON_DELEGATEE(method f, address bob)
 }
 
 
-
-
-
-rule voting_power_correct(method f,
-                          address alice, address bob, address charlie, uint256 amount)
-filtered {f -> !is_stake_redeem_method(f)}
-{
-    env e;
-    calldataarg args;
-
-    //    require getExchangeRate() == 2000000000000000000;
-    requireInvariant user_cant_voting_delegate_to_himself();
-    require (bob != 0);
-    //    require (bob==10 && alice == 10 && charlie ==90);
-
-    bool is_bob_delegating_voting_before = getDelegatingVoting(bob);
-    mathint bob_power_before = getPowerCurrent(bob, VOTING_POWER());
-    uint256 bob_balance_before = balanceOf(bob);
-    //    uint256 alice_balance_before   = balanceOf(alice);
-    uint256 charlie_balance_before = balanceOf(charlie);
-
-    address bob_delegatee_before = getVotingDelegatee(bob);
-
-    //require is_bob_delegating_voting_before;
-    require bob_balance_before == 15;
-    require bob_power_before == 50;
-    require amount == 10;
-
-    //    require alice_balance_before == 100;
-    require charlie_balance_before == 10^10;
-    
-    require
-        bob_power_before == sum_all_voting_delegated_power[bob] +
-        ( (mirror_delegationMode[bob]==FULL_POWER_DELEGATED() ||
-           mirror_delegationMode[bob]==VOTING_DELEGATED()) ? 0 : mul_div(mirror_balance[bob],mirror_currentExchangeRate));
-
-    
-    //f(e, args);
-    transferFrom(e, bob, charlie, amount);
-
-    bool is_bob_delegating_voting_after = getDelegatingVoting(bob);
-    uint256 bob_balance_after = balanceOf(bob);
-    mathint bob_power_after = getPowerCurrent(bob, VOTING_POWER());
-
-    assert
-        bob_power_after == sum_all_voting_delegated_power[bob] +
-        ( (mirror_delegationMode[bob]==FULL_POWER_DELEGATED() ||
-           mirror_delegationMode[bob]==VOTING_DELEGATED()) ? 0 : mul_div(mirror_balance[bob],mirror_currentExchangeRate));
-}
