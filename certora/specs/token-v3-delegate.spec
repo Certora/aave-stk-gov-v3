@@ -24,16 +24,20 @@ ghost mul_div(mathint , mathint) returns uint256 {
         (forall mathint den. mul_div(0,den)==0)
         &&
         (forall mathint a. forall mathint b. forall mathint deno.
-         (mul_div(a+b,deno) + 0 == mul_div(a,deno) + mul_div(b,deno)) ||
-         (mul_div(a+b,deno) + 0 == mul_div(a,deno) + mul_div(b,deno)+1) ||
-         (mul_div(a+b,deno) + 0 == mul_div(a,deno) + mul_div(b,deno)-1)
+         (mul_div(a+b,deno) + 0 == mul_div(a,deno) + mul_div(b,deno))
+         &&
+         (mul_div((a/10)*10+b,deno) + 0 == mul_div((a/10)*10,deno) + mul_div(b,deno))
+         //|| (mul_div(a+b,deno) + 0 == mul_div(a,deno) + mul_div(b,deno)+1)
+         //|| (mul_div(a+b,deno) + 0 == mul_div(a,deno) + mul_div(b,deno)-1)
         );
-}
+        }
+
+
 /*
 ghost mul_div(mathint , mathint) returns uint256 {
     axiom
         (forall mathint a. forall mathint deno.
-         (mul_div(a,deno)+0 == a) 
+         (mul_div(a,deno)+0 == 2*a) 
         );
 }
 */
@@ -867,4 +871,35 @@ rule transferAndTransferFromPowerEquivalence(address bob, uint amount) {
 
 
 
+
+rule vpOnlyAccount2IsDelegating_bob_to_alice(address bob, address alice, uint256 amount) {
+    env e;
+    require bob != alice;
+    require (bob==10 && alice==90);
+
+    bool isBobDelegatingVoting = getDelegatingVoting(bob);
+    bool isAliceDelegatingVoting = getDelegatingVoting(alice);
+    require !isBobDelegatingVoting && isAliceDelegatingVoting;
+
+    require getVotingDelegatee(alice) == bob;
+
+    mathint alicePowerBefore = getPowerCurrent(alice, VOTING_POWER());
+    mathint bobPowerBefore = getPowerCurrent(bob, VOTING_POWER());
+    require alicePowerBefore == 0;
+    uint256 aliceBalanceBefore = balanceOf(alice);
+    uint256 bobBalanceBefore = balanceOf(bob);
+
+    require (amount==3);
+    require (bobBalanceBefore==3);
+    
+    transferFrom(e, bob, alice, amount);
+
+    mathint bobPowerAfter = getPowerCurrent(bob, VOTING_POWER());
+    uint256 aliceBalanceAfter = balanceOf(alice);
+    uint256 bobBalanceAfter = balanceOf(bob);
+
+    assert bobPowerAfter == bobPowerBefore - mul_div(amount,getExchangeRate())
+                  + normalizeNew(aliceBalanceAfter) - normalizeNew(aliceBalanceBefore)
+                 ;
+}
 
