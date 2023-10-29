@@ -558,8 +558,8 @@ rule vp_change_of_balance_affect_power_NON_DELEGATEE(method f,
 
     @Link:
 */
-rule pp_change_in_balance_affect_power_DELEGATEE(method f,address bob,address alice1,address alice2)
-{
+function pp_change_in_balance_affect_power_DELEGATEE(method f) {
+    address bob; address alice1; address alice2;
     env e;
     calldataarg args;
     require bob != 0; require alice1 != 0; require alice2 != 0;
@@ -650,6 +650,30 @@ rule pp_change_in_balance_affect_power_DELEGATEE(method f,address bob,address al
         bob_power_after == bob_power_before +
         mul_div(alice1_diff + alice2_diff, mirror_currentExchangeRate);
 }
+
+rule pp_change_in_balance_affect_power_DELEGATEE_transfer(method f) filtered {
+    f -> f.selector == sig:transfer(address,uint256).selector
+} {
+    pp_change_in_balance_affect_power_DELEGATEE(f);
+}
+rule pp_change_in_balance_affect_power_DELEGATEE_metaDelegate(method f) filtered {
+    f -> f.selector == sig:metaDelegate(address,address,uint256,uint8,bytes32,bytes32).selector
+} {
+    pp_change_in_balance_affect_power_DELEGATEE(f);
+}
+rule pp_change_in_balance_affect_power_DELEGATEE_claimRewardsAndStakeOnBehalf(method f) filtered {
+    f -> f.selector == sig:claimRewardsAndStakeOnBehalf(address,address,uint256).selector
+} {
+    pp_change_in_balance_affect_power_DELEGATEE(f);
+}
+rule pp_change_in_balance_affect_power_DELEGATEE_all_others(method f) filtered {f ->
+    f.selector != sig:transfer(address,uint256).selector &&
+    f.selector != sig:metaDelegate(address,address,uint256,uint8,bytes32,bytes32).selector &&
+    f.selector != sig:claimRewardsAndStakeOnBehalf(address,address,uint256).selector
+} {
+    pp_change_in_balance_affect_power_DELEGATEE(f);
+}
+
 
 
 

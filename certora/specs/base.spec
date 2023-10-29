@@ -79,7 +79,7 @@ methods {
 
 definition VOTING_POWER() returns IGovernancePowerDelegationToken.GovernancePowerType = IGovernancePowerDelegationToken.GovernancePowerType.VOTING;
 definition PROPOSITION_POWER() returns IGovernancePowerDelegationToken.GovernancePowerType = IGovernancePowerDelegationToken.GovernancePowerType.PROPOSITION;
-definition DELEGATED_POWER_DIVIDER() returns uint256 = 10; //10^10;
+definition DELEGATED_POWER_DIVIDER() returns uint256 = 10^10;
 
 /**
     Definitions of delegation modes
