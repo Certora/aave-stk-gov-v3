@@ -8,6 +8,7 @@
 */
 
 import "base.spec";
+import "base-HL.spec";
 
 
 methods {
@@ -121,8 +122,8 @@ invariant user_cant_proposition_delegate_to_himself()
 
     @Link:
 */
-rule vp_change_in_balance_affect_power_DELEGATEE(method f,address bob,address alice1,address alice2)
-{
+function vp_change_in_balance_affect_power_DELEGATEE(method f) {
+    address bob; address alice1; address alice2;
     env e;
     calldataarg args;
     require bob != 0; require alice1 != 0; require alice2 != 0;
@@ -206,6 +207,42 @@ rule vp_change_in_balance_affect_power_DELEGATEE(method f,address bob,address al
         is_bob_delegating_after =>
         upto_1(bob_power_after,
                bob_power_before + mul_div(alice1_diff + alice2_diff, mirror_currentExchangeRate));
+}
+
+rule vp_change_in_balance_affect_power_DELEGATEE_all_others(method f) filtered {f ->
+        //        f.selector != sig:claimRewardsOnBehalf(address,address,uint256).selector && 
+        //f.selector != sig:claimRewards(address,uint256).selector &&
+        !is_transfer_method(f) &&
+        !is_stake_method(f) &&
+        !is_redeem_method(f) &&
+        !is_delegate_method(f)
+} {
+    vp_change_in_balance_affect_power_DELEGATEE(f);
+}
+
+
+rule vp_change_in_balance_affect_power_DELEGATEE_transfer_M(method f) filtered {
+    f -> is_transfer_method(f)
+} {
+    vp_change_in_balance_affect_power_DELEGATEE(f);
+}
+
+rule vp_change_in_balance_affect_power_DELEGATEE_stake_M(method f) filtered {
+    f -> is_stake_method(f)
+} {
+    vp_change_in_balance_affect_power_DELEGATEE(f);
+}
+
+rule vp_change_in_balance_affect_power_DELEGATEE_redeem_M(method f) filtered {
+    f -> is_redeem_method(f)
+} {
+    vp_change_in_balance_affect_power_DELEGATEE(f);
+}
+
+rule vp_change_in_balance_affect_power_DELEGATEE_delegate_M(method f) filtered {
+    f -> is_delegate_method(f)
+} {
+    vp_change_in_balance_affect_power_DELEGATEE(f);
 }
 
 
@@ -319,81 +356,13 @@ function pp_change_in_balance_affect_power_DELEGATEE(method f) {
                bob_power_before + mul_div(alice1_diff+alice2_diff, mirror_currentExchangeRate));
 }
 
-rule pp_change_in_balance_affect_power_DELEGATEE_transfer(method f) filtered {
-    f -> f.selector == sig:transfer(address,uint256).selector
-} {
-    pp_change_in_balance_affect_power_DELEGATEE(f);
-}
-rule pp_change_in_balance_affect_power_DELEGATEE_metaDelegate(method f) filtered {
-    f -> f.selector == sig:metaDelegate(address,address,uint256,uint8,bytes32,bytes32).selector
-} {
-    pp_change_in_balance_affect_power_DELEGATEE(f);
-}
-rule pp_change_in_balance_affect_power_DELEGATEE_claimRewardsAndStakeOnBehalf(method f) filtered {
-    f -> f.selector == sig:claimRewardsAndStakeOnBehalf(address,address,uint256).selector
-} {
-    pp_change_in_balance_affect_power_DELEGATEE(f);
-}
-rule pp_change_in_balance_affect_power_DELEGATEE_delegate(method f) filtered {
-    f -> f.selector == sig:delegate(address).selector
-} {
-    pp_change_in_balance_affect_power_DELEGATEE(f);
-}
-rule pp_change_in_balance_affect_power_DELEGATEE_metaDelegateByType(method f) filtered {
-    f -> f.selector == sig:metaDelegateByType(address,address,IGovernancePowerDelegationToken.GovernancePowerType,uint256,uint8,bytes32,bytes32).selector
-} {
-    pp_change_in_balance_affect_power_DELEGATEE(f);
-}
-//rule pp_change_in_balance_affect_power_DELEGATEE_(method f) filtered {
-//    f -> f.selector == sig:.selector
-//} {
-//    pp_change_in_balance_affect_power_DELEGATEE(f);
-//}
-rule pp_change_in_balance_affect_power_DELEGATEE_stake(method f) filtered {
-    f -> f.selector == sig:stake(address,uint256).selector
-} {
-    pp_change_in_balance_affect_power_DELEGATEE(f);
-}
-rule pp_change_in_balance_affect_power_DELEGATEE_claimRewardsOnBehalf(method f) filtered {
-    f -> f.selector == sig:claimRewardsOnBehalf(address,address,uint256).selector
-} {
-    pp_change_in_balance_affect_power_DELEGATEE(f);
-}
-rule pp_change_in_balance_affect_power_DELEGATEE_stakeWithPermit(method f) filtered {
-    f -> f.selector == sig:stakeWithPermit(uint256,uint256,uint8,bytes32,bytes32).selector
-} {
-    pp_change_in_balance_affect_power_DELEGATEE(f);
-}
-rule pp_change_in_balance_affect_power_DELEGATEE_redeemOnBehalf(method f) filtered {
-    f -> f.selector == sig:redeemOnBehalf(address,address,uint256).selector
-} {
-    pp_change_in_balance_affect_power_DELEGATEE(f);
-}
-rule pp_change_in_balance_affect_power_DELEGATEE_claimRewards(method f) filtered {
-    f -> f.selector == sig:claimRewards(address,uint256).selector
-} {
-    pp_change_in_balance_affect_power_DELEGATEE(f);
-}
-rule pp_change_in_balance_affect_power_DELEGATEE_claimRewardsAndRedeemOnBehalf(method f)filtered {
-    f -> f.selector == sig:claimRewardsAndRedeemOnBehalf(address,address,uint256,uint256).selector
-} {
-    pp_change_in_balance_affect_power_DELEGATEE(f);
-}
 rule pp_change_in_balance_affect_power_DELEGATEE_all_others(method f) filtered {f ->
-        /*        f.selector != sig:transfer(address,uint256).selector &&
-        f.selector != sig:metaDelegate(address,address,uint256,uint8,bytes32,bytes32).selector &&
-        f.selector != sig:claimRewardsAndStakeOnBehalf(address,address,uint256).selector &&
-        f.selector != sig:delegate(address).selector &&
-        f.selector != sig:metaDelegateByType(address,address,IGovernancePowerDelegationToken.GovernancePowerType,uint256,uint8,bytes32,bytes32).selector &&
-        f.selector != sig:stake(address,uint256).selector &&
-        f.selector != sig:claimRewardsOnBehalf(address,address,uint256).selector &&
-        f.selector != sig:stakeWithPermit(uint256,uint256,uint8,bytes32,bytes32).selector &&
-        f.selector != sig:redeemOnBehalf(address,address,uint256).selector &&
-        f.selector != sig:claimRewards(address,uint256).selector &&
-        f.selector != sig:claimRewardsAndRedeemOnBehalf(address,address,uint256,uint256).selector &&*/
+        //        f.selector != sig:claimRewardsOnBehalf(address,address,uint256).selector && 
+        //f.selector != sig:claimRewards(address,uint256).selector &&
         !is_transfer_method(f) &&
         !is_stake_method(f) &&
-        !is_redeem_method(f) 
+        !is_redeem_method(f) &&
+        !is_delegate_method(f)
 } {
     pp_change_in_balance_affect_power_DELEGATEE(f);
 }
@@ -413,6 +382,12 @@ rule pp_change_in_balance_affect_power_DELEGATEE_stake_M(method f) filtered {
 
 rule pp_change_in_balance_affect_power_DELEGATEE_redeem_M(method f) filtered {
     f -> is_redeem_method(f)
+} {
+    pp_change_in_balance_affect_power_DELEGATEE(f);
+}
+
+rule pp_change_in_balance_affect_power_DELEGATEE_delegate_M(method f) filtered {
+    f -> is_delegate_method(f)
 } {
     pp_change_in_balance_affect_power_DELEGATEE(f);
 }

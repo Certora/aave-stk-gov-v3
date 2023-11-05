@@ -8,7 +8,7 @@
 */
 
 import "base.spec";
-
+import "base-HL.spec";
 
 methods {
     function _.mul_div_munged(uint256 x, uint256 denominator) external =>

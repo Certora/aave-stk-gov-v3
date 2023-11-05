@@ -1,8 +1,25 @@
 
+certoraRun --send_only --disable_auto_cache_key_gen \
+           certora/conf/token-v3-delegate-HL-under-approx.conf \
+           --rule vp_change_in_balance_affect_power_DELEGATEE_all_others
 
 certoraRun --send_only --disable_auto_cache_key_gen \
            certora/conf/token-v3-delegate-HL-under-approx.conf \
-           --rule vp_change_in_balance_affect_power_DELEGATEE
+           --rule vp_change_in_balance_affect_power_DELEGATEE_transfer_M
+
+certoraRun --send_only --disable_auto_cache_key_gen \
+           certora/conf/token-v3-delegate-HL-under-approx.conf \
+           --rule vp_change_in_balance_affect_power_DELEGATEE_stake_M
+
+certoraRun --send_only --disable_auto_cache_key_gen \
+           certora/conf/token-v3-delegate-HL-under-approx.conf \
+           --rule vp_change_in_balance_affect_power_DELEGATEE_redeem_M
+
+certoraRun --send_only --disable_auto_cache_key_gen \
+           certora/conf/token-v3-delegate-HL-under-approx.conf \
+           --rule vp_change_in_balance_affect_power_DELEGATEE_delegate_M
+
+
 
 certoraRun --send_only --disable_auto_cache_key_gen \
            certora/conf/token-v3-delegate-HL-under-approx.conf \
@@ -19,6 +36,10 @@ certoraRun --send_only --disable_auto_cache_key_gen \
 certoraRun --send_only --disable_auto_cache_key_gen \
            certora/conf/token-v3-delegate-HL-under-approx.conf \
            --rule pp_change_in_balance_affect_power_DELEGATEE_redeem_M
+
+certoraRun --send_only --disable_auto_cache_key_gen \
+           certora/conf/token-v3-delegate-HL-under-approx.conf \
+           --rule pp_change_in_balance_affect_power_DELEGATEE_delegate_M
 
 certoraRun --send_only --disable_auto_cache_key_gen \
            certora/conf/token-v3-delegate-HL.conf \
