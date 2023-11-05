@@ -210,8 +210,6 @@ function vp_change_in_balance_affect_power_DELEGATEE(method f) {
 }
 
 rule vp_change_in_balance_affect_power_DELEGATEE_all_others(method f) filtered {f ->
-        //        f.selector != sig:claimRewardsOnBehalf(address,address,uint256).selector && 
-        //f.selector != sig:claimRewards(address,uint256).selector &&
         !is_transfer_method(f) &&
         !is_stake_method(f) &&
         !is_redeem_method(f) &&
@@ -357,8 +355,6 @@ function pp_change_in_balance_affect_power_DELEGATEE(method f) {
 }
 
 rule pp_change_in_balance_affect_power_DELEGATEE_all_others(method f) filtered {f ->
-        //        f.selector != sig:claimRewardsOnBehalf(address,address,uint256).selector && 
-        //f.selector != sig:claimRewards(address,uint256).selector &&
         !is_transfer_method(f) &&
         !is_stake_method(f) &&
         !is_redeem_method(f) &&
