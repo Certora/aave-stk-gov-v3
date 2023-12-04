@@ -107,7 +107,7 @@ contract StakedAaveV3 is StakedTokenV3, IStakedAaveV3 {
   }
 
   /// @notice Assembly implementation of the gas limited call to avoid return gas bomb,
-  /// moreover call to a destructed plugin would also revert even inside try-catch block in Solidity 0.8.17
+  /// moreover call would also revert even inside try-catch block in Solidity 0.8.17
   function _updateDiscountDistribution(
     address cachedGhoDebtToken,
     address from,
@@ -120,7 +120,9 @@ contract StakedAaveV3 is StakedTokenV3, IStakedAaveV3 {
       .updateDiscountDistribution
       .selector;
     uint256 gasLimit = 220_000;
-    assembly ('memory-safe') {
+
+    /// @solidity memory-safe-assembly
+    assembly {
       // solhint-disable-line no-inline-assembly
       let ptr := mload(0x40)
       mstore(ptr, selector)

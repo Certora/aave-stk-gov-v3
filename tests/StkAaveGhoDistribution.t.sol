@@ -22,6 +22,14 @@ contract BaseTest is Test {
 contract GhoDistributionGasTest is BaseTest, StakedAaveV3 {
   address ghoToken = 0x786dBff3f1292ae8F92ea68Cf93c30b34B1ed04B;
 
+  event Mint(
+    address indexed caller,
+    address indexed onBehalfOf,
+    uint256 value,
+    uint256 balanceIncrease,
+    uint256 index
+  );
+
   function setUp() public {}
 
   constructor()
@@ -38,18 +46,39 @@ contract GhoDistributionGasTest is BaseTest, StakedAaveV3 {
     ghoDebtToken = IGhoVariableDebtTokenTransferHook(ghoToken);
   }
 
-  function test_transferWithCorrectGas() public {
-    uint256 gasLimit = 4_000;
-
+  function test_transferWithCorrectGasLimit() public {
     address from = 0xE831C8903de820137c13681E78A5780afDdf7697;
     address to = address(123415);
     uint256 fromBalance = 10 ether;
     uint256 toBalance = 0 ether;
 
     uint256 amount = 1 ether;
-
-    vm.expectRevert();
-    this.updateDiscountDistribution{gas: gasLimit}(
+    // expect execution to complete
+    vm.startPrank(0x4da27a545c0c5B758a6BA100e3a049001de870f5);
+    vm.expectCallMinGas(
+      ghoToken,
+      0,
+      220_000,
+      abi.encodeWithSelector(
+        IGhoVariableDebtTokenTransferHook.updateDiscountDistribution.selector,
+        from,
+        to,
+        fromBalance,
+        toBalance,
+        amount
+      )
+    );
+    vm.expectEmit(true, true, false, true);
+    emit Transfer(address(0), from, 41185113828714);
+    vm.expectEmit(true, true, false, true);
+    emit Mint(
+      address(0),
+      from,
+      41185113828714,
+      41185113828714,
+      1008020889040822120071191507
+    );
+    _updateDiscountDistribution(
       ghoToken,
       from,
       to,
@@ -57,6 +86,17 @@ contract GhoDistributionGasTest is BaseTest, StakedAaveV3 {
       toBalance,
       amount
     );
+    vm.stopPrank();
+  }
+
+  // test to make external call revert but due other reason different than out of gas
+  function test_transferWithCorrectGasButErrorsOut() public {
+    address from = 0xE831C8903de820137c13681E78A5780afDdf7697;
+    address to = address(123415);
+    uint256 fromBalance = 10 ether;
+    uint256 toBalance = 0 ether;
+
+    uint256 amount = 1 ether;
 
     // expect error but not revert
     this.updateDiscountDistribution(
@@ -67,9 +107,22 @@ contract GhoDistributionGasTest is BaseTest, StakedAaveV3 {
       toBalance,
       amount
     );
+  }
 
-    vm.startPrank(0x4da27a545c0c5B758a6BA100e3a049001de870f5);
-    _updateDiscountDistribution(
+  // test to make external call revert due to not enough gas
+  function test_transferWithIncorrectGas() public {
+    uint256 insufficientGasLimit = 4_000;
+
+    address from = 0xE831C8903de820137c13681E78A5780afDdf7697;
+    address to = address(123415);
+    uint256 fromBalance = 10 ether;
+    uint256 toBalance = 0 ether;
+
+    uint256 amount = 1 ether;
+
+    // reverts because there is not enough gas
+    vm.expectRevert();
+    this.updateDiscountDistribution{gas: insufficientGasLimit}(
       ghoToken,
       from,
       to,
@@ -77,7 +130,6 @@ contract GhoDistributionGasTest is BaseTest, StakedAaveV3 {
       toBalance,
       amount
     );
-    vm.stopPrank();
   }
 
   function updateDiscountDistribution(
