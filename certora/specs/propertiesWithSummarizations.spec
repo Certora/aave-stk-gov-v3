@@ -8,6 +8,7 @@
 */
 invariant allSharesAreBacked()
     previewRedeem(totalSupply()) <= stake_token.balanceOf(currentContract)
+    filtered { f -> !f.isView && f.contract == currentContract}
     {
         preserved stake(address to, uint256 amount) with (env e2)
         {

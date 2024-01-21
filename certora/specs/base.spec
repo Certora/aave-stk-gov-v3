@@ -192,3 +192,6 @@ function is_transfer_method_func(method f) returns bool {
 
 
 
+function get_maxSlashable() returns mathint {
+    return previewRedeem(totalSupply()) *getMaxSlashablePercentage() / PERCENTAGE_FACTOR();
+}

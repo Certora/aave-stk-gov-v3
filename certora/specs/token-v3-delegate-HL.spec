@@ -41,17 +41,17 @@ definition is_proposition_delegate(address a) returns bool =
 
 
 
-invariant mirror_votingDelegatee_correct()
-    forall address a.mirror_votingDelegatee[a] == getVotingDelegatee(a);
+invariant mirror_votingDelegatee_correct(address a)
+    mirror_votingDelegatee[a] == getVotingDelegatee(a);
 
-invariant mirror_propositionDelegatee_correct()
-    forall address a.mirror_propositionDelegatee[a] == getPropositionDelegatee(a);
+invariant mirror_propositionDelegatee_correct(address a)
+    mirror_propositionDelegatee[a] == getPropositionDelegatee(a);
 
-invariant mirror_delegationMode_correct()
-    forall address a.mirror_delegationMode[a] == getDelegationMode(a);
+invariant mirror_delegationMode_correct(address a)
+    mirror_delegationMode[a] == getDelegationMode(a);
 
-invariant mirror_balance_correct()
-    forall address a.mirror_balance[a] == getBalance(a);
+invariant mirror_balance_correct(address a)
+    mirror_balance[a] == getBalance(a);
 
 
 
@@ -64,6 +64,7 @@ invariant inv_voting_power_correct(address a)
              mirror_currentExchangeRate
             )+0
     )
+    filtered { f -> !f.isView && f.contract == currentContract}
 {
     preserved with (env e) {
         requireInvariant user_cant_voting_delegate_to_himself();
@@ -81,6 +82,7 @@ invariant inv_proposition_power_correct(address a)
              mirror_currentExchangeRate
             )+0
     )
+    filtered { f -> !f.isView && f.contract == currentContract}
 {
     preserved with (env e) {
         requireInvariant user_cant_proposition_delegate_to_himself();

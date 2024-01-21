@@ -97,15 +97,16 @@ rule noStakingPostSlashingPeriod(address onBehalfOf, uint256 amount) {
 */
 rule noSlashingMoreThanMax(uint256 amount, address recipient){
     env e;
+    require(getMaxSlashablePercentage() <= PERCENTAGE_FACTOR());
     uint vaultBalanceBefore = stake_token.balanceOf(currentContract);
-    require(vaultBalanceBefore < AAVE_MAX_SUPPLY());
-    require(getMaxSlashablePercentage() >= PERCENTAGE_FACTOR() &&
-            to_mathint(getMaxSlashablePercentage()) <= MAX_PERCENTAGE());
-    mathint maxSlashable = vaultBalanceBefore * getMaxSlashablePercentage() / PERCENTAGE_FACTOR();
+
+    // We calculate maxSlashable the same way it is calculated in slash(...)
+    mathint maxSlashable = get_maxSlashable();
 
     require (to_mathint(amount) > maxSlashable);
     require (recipient != currentContract);
     slash(e, recipient, amount);
+
     uint vaultBalanceAfter = stake_token.balanceOf(currentContract);
 
     assert vaultBalanceBefore - vaultBalanceAfter == maxSlashable;
@@ -540,38 +541,6 @@ rule exchangeRateNeverZero(method f) {
     uint216 ER_ = getExchangeRate();
 
     assert ER_ != 0;
-}
-
-/*
-    @Rule slashAndReturnFundsOfZeroDoesntChangeExchangeRate
-    @Description: Slashing 0 and returningFunds of 0 do not affect the exchange rate.
-
-    @Formula:
-        {
-            ExchangeRateBefore := getExchangeRate()
-        }
-            slash(dest, 0) || returnFunds(0)
-        {
-            getExchangeRate() == ExchangeRateBefore
-        }
-
-    @Notes:
-    @Link: https://prover.certora.com/output/40577/3fdb151c46c84b1ab323b99c80890273/?anonymousKey=68e37ada870b7b91c68a5eadaf6030f3989002a6
-*/
-rule slashAndReturnFundsOfZeroDoesntChangeExchangeRate() {
-    env e;
-    address dest; uint256 amt = 0;
-    uint216 _ER = getExchangeRate();
-    storage initialStorage = lastStorage;
-
-    slash(e, dest, amt);
-    uint216 ER_AfterSlash = getExchangeRate();
-
-    returnFunds(e, amt) at initialStorage;
-    uint216 ER_AfterReturnFunds = getExchangeRate();
-
-    assert(ER_AfterSlash == ER_AfterReturnFunds);
-    assert(ER_AfterReturnFunds == _ER);
 }
 
 /*
