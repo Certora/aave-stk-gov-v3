@@ -66,14 +66,14 @@ jobs:
           - token-v3-delegate-HL-under-approx.conf --rule pp_change_in_balance_affect_power_DELEGATEE_delegate_M
           - token-v3-delegate-HL.conf --rule vp_change_of_balance_affect_power_NON_DELEGATEE
           - token-v3-delegate-HL.conf --rule pp_change_of_balance_affect_power_NON_DELEGATEE
-          - token-v3-delegate-HL.conf --rule \
-              inv_voting_power_correct \
-              inv_proposition_power_correct \
-              user_cant_voting_delegate_to_himself \
-              user_cant_proposition_delegate_to_himself \
-              no_function_changes_both_balance_and_delegation_state \
-              sum_all_voting_delegated_power_EQ_DelegatingVotingBal \
-              sum_all_proposition_delegated_power_EQ_DelegatingPropositionBal
+          - token-v3-delegate-HL.conf \
+              --rule inv_voting_power_correct \
+              --rule inv_proposition_power_correct \
+              --rule user_cant_voting_delegate_to_himself \
+              --rule user_cant_proposition_delegate_to_himself \
+              --rule no_function_changes_both_balance_and_delegation_state \
+              --rule sum_all_voting_delegated_power_EQ_DelegatingVotingBal \
+              --rule sum_all_proposition_delegated_power_EQ_DelegatingPropositionBal
 #              mirror_votingDelegatee_correct \
 #              mirror_propositionDelegatee_correct \
 #              mirror_delegationMode_correct \
