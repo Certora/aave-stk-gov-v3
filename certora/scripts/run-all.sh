@@ -1,59 +1,61 @@
+CMN="--disable_auto_cache_key_gen"
 
 
 
-certoraRun --send_only --disable_auto_cache_key_gen \
-           certora/conf/token-v3-delegate-HL-under-approx.conf \
+echo "******** Running:  1 ***************"
+certoraRun $CMN certora/conf/token-v3-delegate-HL-under-approx.conf \
            --rule vp_change_in_balance_affect_power_DELEGATEE_all_others
 
-certoraRun --send_only --disable_auto_cache_key_gen \
-           certora/conf/token-v3-delegate-HL-under-approx.conf \
+echo "******** Running:  2 ***************"
+certoraRun $CMN  certora/conf/token-v3-delegate-HL-under-approx.conf \
            --rule vp_change_in_balance_affect_power_DELEGATEE_transfer_M
 
-certoraRun --send_only --disable_auto_cache_key_gen \
-           certora/conf/token-v3-delegate-HL-under-approx.conf \
+echo "******** Running:  3 ***************"
+certoraRun $CMN  certora/conf/token-v3-delegate-HL-under-approx.conf \
            --rule vp_change_in_balance_affect_power_DELEGATEE_stake_M
 
-certoraRun --send_only --disable_auto_cache_key_gen \
-           certora/conf/token-v3-delegate-HL-under-approx.conf \
+echo "******** Running:  4 ***************"
+certoraRun $CMN  certora/conf/token-v3-delegate-HL-under-approx.conf \
            --rule vp_change_in_balance_affect_power_DELEGATEE_redeem_M
 
-certoraRun --send_only --disable_auto_cache_key_gen \
-           certora/conf/token-v3-delegate-HL-under-approx.conf \
+echo "******** Running:  5 ***************"
+certoraRun $CMN  certora/conf/token-v3-delegate-HL-under-approx.conf \
            --rule vp_change_in_balance_affect_power_DELEGATEE_delegate_M
 
 
 
-certoraRun --send_only --disable_auto_cache_key_gen \
-           certora/conf/token-v3-delegate-HL-under-approx.conf \
+echo "******** Running:  6 ***************"
+certoraRun $CMN  certora/conf/token-v3-delegate-HL-under-approx.conf \
            --rule pp_change_in_balance_affect_power_DELEGATEE_all_others
 
-certoraRun --send_only --disable_auto_cache_key_gen \
-           certora/conf/token-v3-delegate-HL-under-approx.conf \
+echo "******** Running:  7 ***************"
+certoraRun $CMN  certora/conf/token-v3-delegate-HL-under-approx.conf \
            --rule pp_change_in_balance_affect_power_DELEGATEE_transfer_M
 
-certoraRun --send_only --disable_auto_cache_key_gen \
-           certora/conf/token-v3-delegate-HL-under-approx.conf \
+echo "******** Running:  8 ***************"
+certoraRun $CMN  certora/conf/token-v3-delegate-HL-under-approx.conf \
            --rule pp_change_in_balance_affect_power_DELEGATEE_stake_M
 
-certoraRun --send_only --disable_auto_cache_key_gen \
-           certora/conf/token-v3-delegate-HL-under-approx.conf \
+echo "******** Running:  9 ***************"
+certoraRun $CMN  certora/conf/token-v3-delegate-HL-under-approx.conf \
            --rule pp_change_in_balance_affect_power_DELEGATEE_redeem_M
 
-certoraRun --send_only --disable_auto_cache_key_gen \
-           certora/conf/token-v3-delegate-HL-under-approx.conf \
+echo "******** Running: 10 ***************"
+certoraRun $CMN  certora/conf/token-v3-delegate-HL-under-approx.conf \
            --rule pp_change_in_balance_affect_power_DELEGATEE_delegate_M
 
 
 
-certoraRun --send_only --disable_auto_cache_key_gen \
-           certora/conf/token-v3-delegate-HL.conf \
+echo "******** Running: 11 ***************"
+certoraRun $CMN  certora/conf/token-v3-delegate-HL.conf \
            --rule vp_change_of_balance_affect_power_NON_DELEGATEE
 
-certoraRun --send_only --disable_auto_cache_key_gen \
-           certora/conf/token-v3-delegate-HL.conf \
+echo "******** Running: 12 ***************"
+certoraRun $CMN  certora/conf/token-v3-delegate-HL.conf \
            --rule pp_change_of_balance_affect_power_NON_DELEGATEE
 
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/token-v3-delegate-HL.conf \
+echo "******** Running: 13 ***************"
+certoraRun $CMN certora/conf/token-v3-delegate-HL.conf \
            --rule \
            mirror_votingDelegatee_correct \
            mirror_propositionDelegatee_correct \
@@ -68,41 +70,67 @@ certoraRun --send_only --disable_auto_cache_key_gen certora/conf/token-v3-delega
            sum_all_proposition_delegated_power_EQ_DelegatingPropositionBal
 
 
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/token-v3-delegate.conf 
+echo "******** Running: 14 ***************"
+certoraRun $CMN certora/conf/token-v3-delegate.conf 
 
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/allProps.conf  --rule integrityOfSlashing --rule integrityOfStaking --rule previewStakeEquivalentStake --rule noStakingPostSlashingPeriod --rule noSlashingMoreThanMax --rule noRedeemOutOfUnstakeWindow --rule noEntryUntilSlashingSettled --rule integrityOfRedeem --rule cooldownCorrectness --rule airdropNotMutualized --rule integrityOfReturnFunds --rule slashAndReturnFundsOfZeroDoesntChangeExchangeRate
+echo "******** Running: 15 ***************"
+certoraRun $CMN certora/conf/allProps.conf \
+           --rule integrityOfSlashing \
+           --rule integrityOfStaking \
+           --rule previewStakeEquivalentStake \
+           --rule noStakingPostSlashingPeriod \
+           --rule noSlashingMoreThanMax \
+           --rule noRedeemOutOfUnstakeWindow \
+           --rule noEntryUntilSlashingSettled \
+           --rule integrityOfRedeem \
+           --rule cooldownCorrectness \
+           --rule airdropNotMutualized \
+           --rule integrityOfReturnFunds \
+           --rule rewardsIncreaseForNonClaimFunctions \
+           --rule rewardsMonotonicallyIncrease \
+           --rule rewardsGetterEquivalentClaim \
+           --rule indexesMonotonicallyIncrease \
+           --rule exchangeRateNeverZero \
+           --rule totalSupplyDoesNotDropToZero \
+           --rule slashingIncreaseExchangeRate \
+           --rule returnFundsDecreaseExchangeRate \
+           --msg "15. allProps.conf::  all rules"
 
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/allProps.conf \
-           --rule rewardsIncreaseForNonClaimFunctions
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/allProps.conf \
-           --rule rewardsMonotonicallyIncrease
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/allProps.conf \
-           --rule rewardsGetterEquivalentClaim
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/allProps.conf \
-           --rule indexesMonotonicallyIncrease
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/allProps.conf \
-           --rule exchangeRateNeverZero
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/allProps.conf \
-           --rule totalSupplyDoesNotDropToZero
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/allProps.conf \
-           --rule slashingIncreaseExchangeRate
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/allProps.conf \
-           --rule returnFundsDecreaseExchangeRate
+
+echo "******** Running: 16 ***************"
+certoraRun $CMN certora/conf/token-v3-erc20.conf 
+
+echo "******** Running: 17 ***************"
+certoraRun $CMN certora/conf/token-v3-community.conf 
+
+echo "******** Running: 18 ***************"
+certoraRun $CMN certora/conf/propertiesWithSummarization.conf 
+
+echo "******** Running: 19 ***************"
+certoraRun $CMN certora/conf/invariants.conf 
 
 
+echo "******** Running: 20 ***************"
+certoraRun $CMN certora/conf/token-v3-general.conf --rule delegateCorrectness
+echo "******** Running: 21 ***************"
+certoraRun $CMN certora/conf/token-v3-general.conf --rule sumOfVBalancesCorrectness
+echo "******** Running: 22 ***************"
+certoraRun $CMN certora/conf/token-v3-general.conf --rule sumOfVBalancesCorrectness_onlyClaimRewardsAndRedeem
+echo "******** Running: 23 ***************"
+certoraRun $CMN certora/conf/token-v3-general.conf --rule sumOfVBalancesCorrectness_onlyClaimRewardsAndRedeemOnBehalf
+echo "******** Running: 24 ***************"
+certoraRun $CMN certora/conf/token-v3-general.conf --rule sumOfPBalancesCorrectness
+echo "******** Running: 25 ***************"
+certoraRun $CMN certora/conf/token-v3-general.conf --rule sumOfPBalancesCorrectness_onlyClaimRewardsAndRedeem
+echo "******** Running: 26 ***************"
+certoraRun $CMN certora/conf/token-v3-general.conf --rule sumOfPBalancesCorrectness_onlyClaimRewardsAndRedeemOnBehalf
+echo "******** Running: 27 ***************"
+certoraRun $CMN certora/conf/token-v3-general.conf --rule sumOfPBalancesCorrectness_onlyRedeem
+echo "******** Running: 28 ***************"
+certoraRun $CMN certora/conf/token-v3-general.conf  --rule sumOfPBalancesCorrectness_onlyRedeemOnBehalf
+echo "******** Running: 29 ***************"
+certoraRun $CMN certora/conf/token-v3-general.conf --rule transferDoesntChangeDelegationMode
 
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/propertiesWithSummarization.conf  
-
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/invariants.conf  
-
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/token-v3-general.conf  --rule delegateCorrectness
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/token-v3-general.conf  --rule sumOfVBalancesCorrectness
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/token-v3-general.conf  --rule sumOfPBalancesCorrectness
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/token-v3-general.conf  --rule transferDoesntChangeDelegationMode
-
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/token-v3-erc20.conf 
-
-certoraRun --send_only --disable_auto_cache_key_gen certora/conf/token-v3-community.conf 
 
 
 

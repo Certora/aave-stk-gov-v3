@@ -548,14 +548,12 @@ rule OtherBalanceOnlyGoesUp(address other, method f) {
     assert balanceOf(other) >= balanceBefore;
 }
 
-rule noRebasing(method f, address alice) {
+rule noRebasing(method f, address alice) filtered {
+    f -> !is_transfer_method(f) && !is_stake_method(f) && !is_redeem_method(f)
+} {
     env e;
     calldataarg args;
 
-    require !is_transfer_method_func(f)
-        && !is_stake_method(f) && !is_redeem_method(f)
-        ;
-    
     uint256 balanceBefore = balanceOf(alice);
     f(e, args);
     uint256 balanceAfter = balanceOf(alice);
