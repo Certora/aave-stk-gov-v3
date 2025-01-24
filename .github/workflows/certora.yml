@@ -23,7 +23,7 @@ jobs:
           cd certora
           touch applyHarness.patch
           make munged
-      - uses: Certora/certora-run-action@main
+      - uses: Certora/certora-run-action@v1
         with:
           configurations: |-
             certora/conf/token-v3-delegate-HL-under-approx.conf --rule vp_change_in_balance_affect_power_DELEGATEE_all_others
