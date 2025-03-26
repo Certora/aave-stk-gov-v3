@@ -73,7 +73,7 @@ ghost mapping(address => mathint) balances {
     and etc.
 
 */
-hook Sstore _balances[KEY address user].delegationMode StakedAaveV3Harness.DelegationMode new_state (StakedAaveV3Harness.DelegationMode old_state) STORAGE {
+hook Sstore _balances[KEY address user].delegationMode StakedAaveV3Harness.DelegationMode new_state (StakedAaveV3Harness.DelegationMode old_state) {
     
     bool willDelegateP = !DELEGATING_PROPOSITION(old_state) && DELEGATING_PROPOSITION(new_state);
     bool wasDelegatingP = DELEGATING_PROPOSITION(old_state) && !DELEGATING_PROPOSITION(new_state);
@@ -112,7 +112,7 @@ hook Sstore _balances[KEY address user].delegationMode StakedAaveV3Harness.Deleg
     Depending on the delegation state, either the delegated or the undelegated balance get updated.
 
 */
-hook Sstore _balances[KEY address user].balance uint104 balance (uint104 old_balance) STORAGE {
+hook Sstore _balances[KEY address user].balance uint104 balance (uint104 old_balance) {
     balances[user] = balances[user] - old_balance + balance;
     // we cannot use if statements inside hooks, hence the ternary operator
     sumDelegatedBalancesV = isDelegatingVoting[user] 
@@ -161,11 +161,12 @@ invariant delegateCorrectness(address user)
 
 */
 invariant sumOfVBalancesCorrectness() 
-    sumDelegatedBalancesV + sumUndelegatedBalancesV == to_mathint(totalSupply())
-    filtered {
-        f -> f.selector != sig:claimRewardsAndRedeem(address, uint256, uint256).selector && 
-             f.selector != sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector
-    }
+  sumDelegatedBalancesV + sumUndelegatedBalancesV == to_mathint(totalSupply())
+  filtered {f ->
+  f.contract==currentContract &&
+  f.selector != sig:claimRewardsAndRedeem(address, uint256, uint256).selector && 
+  f.selector != sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector
+}
 
 invariant sumOfVBalancesCorrectness_onlyClaimRewardsAndRedeem() 
     sumDelegatedBalancesV + sumUndelegatedBalancesV == to_mathint(totalSupply())
@@ -176,7 +177,7 @@ invariant sumOfVBalancesCorrectness_onlyClaimRewardsAndRedeem()
 invariant sumOfVBalancesCorrectness_onlyClaimRewardsAndRedeemOnBehalf() 
     sumDelegatedBalancesV + sumUndelegatedBalancesV == to_mathint(totalSupply())
     filtered {
-        f -> f.selector != sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector
+        f -> f.selector == sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector
     }
 /*
     @Rule

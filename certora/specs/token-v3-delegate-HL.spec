@@ -40,7 +40,7 @@ definition is_proposition_delegate(address a) returns bool =
 
 
 
-
+/*
 invariant mirror_votingDelegatee_correct(address a)
     mirror_votingDelegatee[a] == getVotingDelegatee(a);
 
@@ -51,7 +51,32 @@ invariant mirror_delegationMode_correct(address a)
     mirror_delegationMode[a] == getDelegationMode(a);
 
 invariant mirror_balance_correct(address a)
-    mirror_balance[a] == getBalance(a);
+  mirror_balance[a] == getBalance(a);
+*/
+
+rule mirror_votingDelegatee_correct(address a) {
+  method f; calldataarg args; env e;
+  f(e,args);
+  assert mirror_votingDelegatee[a] == getVotingDelegatee(a);
+}
+rule mirror_propositionDelegatee_correct(address a) {
+  method f; calldataarg args; env e;
+  f(e,args);
+  assert mirror_propositionDelegatee[a] == getPropositionDelegatee(a);
+}
+rule mirror_delegationMode_correct(address a) {
+  method f; calldataarg args; env e;
+  f(e,args);
+  assert mirror_delegationMode[a] == getDelegationMode(a);
+}
+rule mirror_balance_correct(address a) {
+  method f; calldataarg args; env e;
+  f(e,args);
+  assert mirror_balance[a] == getBalance(a);
+}
+
+
+
 
 
 
