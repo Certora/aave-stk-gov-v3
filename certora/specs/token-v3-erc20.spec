@@ -390,10 +390,10 @@ rule ChangingAllowance(method f, address from, address spender) {
 */
 rule TransferSumOfFromAndToBalancesStaySame(address to, uint256 amount) {
     env e;
-    mathint sum = balanceOf(e.msg.sender) + balanceOf(to);
-    require sum < max_uint256;
+    mathint summ = balanceOf(e.msg.sender) + balanceOf(to);
+    require summ < max_uint256;
     transfer(e, to, amount); 
-    assert balanceOf(e.msg.sender) + balanceOf(to) == sum;
+    assert balanceOf(e.msg.sender) + balanceOf(to) == summ;
 }
 
 /*
@@ -420,10 +420,10 @@ rule TransferSumOfFromAndToBalancesStaySame(address to, uint256 amount) {
 */
 rule TransferFromSumOfFromAndToBalancesStaySame(address from, address to, uint256 amount) {
     env e;
-    mathint sum = balanceOf(from) + balanceOf(to);
-    require sum < max_uint256;
+    mathint summ = balanceOf(from) + balanceOf(to);
+    require summ < max_uint256;
     transferFrom(e, from, to, amount); 
-    assert balanceOf(from) + balanceOf(to) == sum;
+    assert balanceOf(from) + balanceOf(to) == summ;
 }
 
 /*

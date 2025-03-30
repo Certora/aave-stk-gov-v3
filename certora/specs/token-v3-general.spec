@@ -20,9 +20,27 @@ import "base.spec";
 */
 
 // sum of all user balances
-ghost mathint sumBalances {
-    init_state axiom sumBalances == 0;
+ghost mathint sumOfBalances {
+    init_state axiom sumOfBalances == 0;
 }
+//hook Sstore _balances[KEY address account].(offset 0) uint104 balance (uint104 balance_old) {
+//  sumOfBalances = sumOfBalances + balance - balance_old;
+//}
+hook Sload uint104 balance _balances[KEY address account].(offset 0) {
+  require balance <= sumOfBalances;
+}
+
+// ====================================================================
+// Invariant: sumOfBalances_eq_totalSupply
+// Description: The total supply equals the sum of all users' balances.
+// Status: PASS
+// ====================================================================
+invariant sumOfBalances_eq_totalSupply()
+  sumOfBalances == totalSupply();
+
+
+
+
 
 // tracking voting delegation status for each address
 ghost mapping(address => bool) isDelegatingVoting {
@@ -67,13 +85,11 @@ ghost mapping(address => mathint) balances {
 
 
 /*
-
     This hook updates the sum of delegated and undelegated balances on each change of delegation state.
     If the user moves from not delegating to delegating, their balance is moved from undelegated to delegating,
     and etc.
-
 */
-hook Sstore _balances[KEY address user].delegationMode StakedAaveV3Harness.DelegationMode new_state (StakedAaveV3Harness.DelegationMode old_state) STORAGE {
+hook Sstore _balances[KEY address user].delegationMode StakedAaveV3Harness.DelegationMode new_state (StakedAaveV3Harness.DelegationMode old_state) {
     
     bool willDelegateP = !DELEGATING_PROPOSITION(old_state) && DELEGATING_PROPOSITION(new_state);
     bool wasDelegatingP = DELEGATING_PROPOSITION(old_state) && !DELEGATING_PROPOSITION(new_state);
@@ -107,12 +123,10 @@ hook Sstore _balances[KEY address user].delegationMode StakedAaveV3Harness.Deleg
 
 
 /*
-
     This hook updates the sum of delegated and undelegated balances on each change of user balance.
     Depending on the delegation state, either the delegated or the undelegated balance get updated.
-
 */
-hook Sstore _balances[KEY address user].balance uint104 balance (uint104 old_balance) STORAGE {
+hook Sstore _balances[KEY address user].balance uint104 balance (uint104 old_balance) {
     balances[user] = balances[user] - old_balance + balance;
     // we cannot use if statements inside hooks, hence the ternary operator
     sumDelegatedBalancesV = isDelegatingVoting[user] 
@@ -127,7 +141,7 @@ hook Sstore _balances[KEY address user].balance uint104 balance (uint104 old_bal
     sumUndelegatedBalancesP = !isDelegatingProposition[user] 
         ? sumUndelegatedBalancesP + to_mathint(balance) - to_mathint(old_balance)
         : sumUndelegatedBalancesP;
-
+    sumOfBalances = sumOfBalances + balance - old_balance;
 }
 
 /*
@@ -161,23 +175,37 @@ invariant delegateCorrectness(address user)
 
 */
 invariant sumOfVBalancesCorrectness() 
-    sumDelegatedBalancesV + sumUndelegatedBalancesV == to_mathint(totalSupply())
-    filtered {
-        f -> f.selector != sig:claimRewardsAndRedeem(address, uint256, uint256).selector && 
-             f.selector != sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector
-    }
-
+  sumDelegatedBalancesV + sumUndelegatedBalancesV == to_mathint(totalSupply())
+  filtered {f ->
+  f.contract==currentContract &&
+  f.selector != sig:claimRewardsAndRedeem(address, uint256, uint256).selector && 
+  f.selector != sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector
+} {
+  preserved {
+    requireInvariant sumOfBalances_eq_totalSupply();
+  }
+}
+  
 invariant sumOfVBalancesCorrectness_onlyClaimRewardsAndRedeem() 
-    sumDelegatedBalancesV + sumUndelegatedBalancesV == to_mathint(totalSupply())
-    filtered {
-        f -> f.selector == sig:claimRewardsAndRedeem(address, uint256, uint256).selector
-    }
+  sumDelegatedBalancesV + sumUndelegatedBalancesV == to_mathint(totalSupply())
+  filtered {
+  f -> f.selector == sig:claimRewardsAndRedeem(address, uint256, uint256).selector
+} {
+  preserved {
+    requireInvariant sumOfBalances_eq_totalSupply();
+  }
+}
 
 invariant sumOfVBalancesCorrectness_onlyClaimRewardsAndRedeemOnBehalf() 
-    sumDelegatedBalancesV + sumUndelegatedBalancesV == to_mathint(totalSupply())
-    filtered {
-        f -> f.selector != sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector
-    }
+  sumDelegatedBalancesV + sumUndelegatedBalancesV == to_mathint(totalSupply())
+  filtered {
+  f -> f.selector == sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector
+} {
+  preserved {
+    requireInvariant sumOfBalances_eq_totalSupply();
+  }
+}
+
 /*
     @Rule
 
@@ -191,32 +219,54 @@ invariant sumOfVBalancesCorrectness_onlyClaimRewardsAndRedeemOnBehalf()
 
 */
 invariant sumOfPBalancesCorrectness() sumDelegatedBalancesP + sumUndelegatedBalancesP == to_mathint(totalSupply())
-    filtered {
-        f -> f.selector != sig:claimRewardsAndRedeem(address, uint256, uint256).selector && 
-             f.selector != sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector &&
-             f.selector != sig:redeem(address,uint256).selector &&
-             f.selector != sig:redeemOnBehalf(address,address,uint256).selector
-    }
+  filtered {
+  f -> f.selector != sig:claimRewardsAndRedeem(address, uint256, uint256).selector && 
+  f.selector != sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector &&
+  f.selector != sig:redeem(address,uint256).selector &&
+  f.selector != sig:redeemOnBehalf(address,address,uint256).selector
+} {
+  preserved {
+    requireInvariant sumOfBalances_eq_totalSupply();
+  }
+}
 
 invariant sumOfPBalancesCorrectness_onlyClaimRewardsAndRedeem() sumDelegatedBalancesP + sumUndelegatedBalancesP == to_mathint(totalSupply())
-    filtered {
-        f -> f.selector == sig:claimRewardsAndRedeem(address,uint256,uint256).selector
-    }
+  filtered {
+  f -> f.selector == sig:claimRewardsAndRedeem(address,uint256,uint256).selector
+} {
+  preserved {
+    requireInvariant sumOfBalances_eq_totalSupply();
+  }
+}
 
 invariant sumOfPBalancesCorrectness_onlyClaimRewardsAndRedeemOnBehalf() sumDelegatedBalancesP + sumUndelegatedBalancesP == to_mathint(totalSupply())
-    filtered {
-        f -> f.selector == sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector
-    }
+  filtered {
+  f -> f.selector == sig:claimRewardsAndRedeemOnBehalf(address, address, uint256, uint256).selector
+} {
+  preserved {
+    requireInvariant sumOfBalances_eq_totalSupply();
+  }
+}
 
 invariant sumOfPBalancesCorrectness_onlyRedeem() sumDelegatedBalancesP + sumUndelegatedBalancesP == to_mathint(totalSupply())
-    filtered {
-        f -> f.selector == sig:redeem(address,uint256).selector
-    }
+  filtered {
+  f -> f.selector == sig:redeem(address,uint256).selector
+} {
+  preserved {
+    requireInvariant sumOfBalances_eq_totalSupply();
+  }
+}
 
 invariant sumOfPBalancesCorrectness_onlyRedeemOnBehalf() sumDelegatedBalancesP + sumUndelegatedBalancesP == to_mathint(totalSupply())
-    filtered {
-        f -> f.selector == sig:redeemOnBehalf(address,address,uint256).selector
-    }
+  filtered {
+  f -> f.selector == sig:redeemOnBehalf(address,address,uint256).selector
+} {
+  preserved {
+    requireInvariant sumOfBalances_eq_totalSupply();
+  }
+}
+
+
 
 /*
     @Rule
@@ -253,4 +303,17 @@ rule transferDoesntChangeDelegationMode() {
 
     assert testFromBefore == testFromAfter && testToBefore == testToAfter;
     assert getDelegationMode(charlie) == stateCharlieBefore;
+}
+
+
+
+rule r_sumOfVBalancesCorrectness() {
+  require sumDelegatedBalancesV + sumUndelegatedBalancesV == totalSupply();
+  //  require sumUndelegatedBalancesV > 0 && sumDelegatedBalancesV > 0;
+
+  env e; address addr; uint amount;
+  requireInvariant sumOfBalances_eq_totalSupply();
+  redeem(e, addr, amount);
+
+  assert sumDelegatedBalancesV + sumUndelegatedBalancesV == totalSupply();
 }

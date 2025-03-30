@@ -8,7 +8,7 @@ ghost uint216 exchangeRate {
     init_state axiom exchangeRate == INITIAL_EXCHANGE_RATE_F();
 }
 
-hook Sstore _currentExchangeRate uint216 new_rate (uint216 old_rate) STORAGE {
+hook Sstore _currentExchangeRate uint216 new_rate (uint216 old_rate) {
     exchangeRate = new_rate;
 }
 
